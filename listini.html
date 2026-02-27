@@ -3,169 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Database Genesis - Mattoni Pieni</title>
+    <title>Genesis - Gestione Database</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #2c3e50; --accent: #2980b9; --bg: #f4f7f6; --success: #27ae60; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.1); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th, td { border: 1px solid #dfe6e9; padding: 12px; text-align: left; }
-        th { background: #34495e; color: white; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; }
-        tr:hover { background-color: #f1f4f6; }
-        input { width: 100%; border: 1px solid transparent; padding: 8px; box-sizing: border-box; background: transparent; border-radius: 4px; transition: 0.2s; }
-        input:focus { background: white; border: 1px solid var(--accent); outline: none; box-shadow: 0 0 5px rgba(41,128,185,0.2); }
-        .btn { padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
-        .btn-add { background: var(--success); color: white; }
-        .btn-save { background: var(--accent); color: white; }
-        .btn-del { background: #ff7675; color: white; padding: 6px 12px; font-size: 0.8rem; }
-        .btn:active { transform: scale(0.98); }
-        #status { font-size: 0.85rem; color: #636e72; margin-top: 10px; }
+        :root { --primary: #2c3e50; --accent: #2980b9; --bg: #f4f7f6; --success: #27ae60; --danger: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        
+        /* Selettore Tabella */
+        .selector-box { background: #ebf2f7; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; }
+        select { padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; flex-grow: 1; }
+
+        .table-container { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { background: var(--primary); color: white; padding: 12px; text-align: left; text-transform: uppercase; font-size: 0.75rem; white-space: nowrap; }
+        td { border-bottom: 1px solid #eee; padding: 8px; }
+        input { width: 100%; padding: 8px; border: 1px solid transparent; border-radius: 4px; box-sizing: border-box; }
+        input:focus { border-color: var(--accent); background: #fff; outline: none; }
+        
+        .actions { display: flex; justify-content: space-between; margin-top: 20px; gap: 10px; }
+        .btn { padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; color: white; }
+        .btn-add { background: var(--success); }
+        .btn-save { background: var(--accent); flex-grow: 1; }
+        .btn-del { background: var(--danger); padding: 5px 10px; font-size: 0.7rem; }
+        #status { font-size: 0.9rem; margin-top: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <div>
-            <h2 style="margin:0;">Listino Genesis Cloud</h2>
-            <small>Sottocategoria: <strong>Mattoni Pieni</strong></small>
-        </div>
-        <div style="display: flex; gap: 15px;">
-            <a href="index.html" style="text-decoration:none; color:var(--primary); font-weight:bold;">Torna alla Home</a>
-        </div>
+        <h2 style="margin:0">⚙️ Gestione Database Genesis</h2>
+        <a href="index.html" style="text-decoration:none; color:var(--primary); font-weight:bold;">Torna alla Home</a>
+    </div>
+
+    <div class="selector-box">
+        <strong>Scegli cosa gestire:</strong>
+        <select id="table-selector" onchange="fetchData()">
+            <optgroup label="MATTONI">
+                <option value="mattoni_genesis">Genesis</option>
+                <option value="mattoni_futura">Futura</option>
+                <option value="mattoni_croma">Croma</option>
+                <option value="mattoni_fortis">Fortis</option>
+                <option value="mattoni_cotto">Cotto</option>
+            </optgroup>
+            <optgroup label="PIETRE">
+                <option value="pietre_posa_incerta">Posa incerta</option>
+                <option value="pietre_pannelli">Pannelli preassemblati</option>
+                <option value="pietre_rettangolare">Taglio Rettangolare</option>
+                <option value="pietre_pavimentazione">Pavimentazione pietra</option>
+                <option value="pietre_tetti">Tetti</option>
+            </optgroup>
+            <optgroup label="LEGNO">
+                <option value="legno_rivestimenti">Rivestimenti</option>
+                <option value="legno_pavimenti">Pavimenti legno</option>
+            </optgroup>
+        </select>
     </div>
 
     <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Nome Prodotto</th>
-                    <th>€ / pz</th>
-                    <th>pz / m²</th>
-                    <th>pz / Bancale</th>
-                    <th>Kg / Bancale</th>
-                    <th>Sfuso (si/no)</th>
-                    <th>Azioni</th>
-                </tr>
-            </thead>
-            <tbody id="table-body">
-                </tbody>
+        <table id="data-table">
+            <thead id="table-head"></thead>
+            <tbody id="table-body"></tbody>
         </table>
     </div>
 
-    <div id="status">Inizializzazione connessione...</div>
+    <div id="status"></div>
 
-    <div style="margin-top: 25px; display: flex; justify-content: space-between; align-items: center;">
-        <button class="btn btn-add" onclick="addRow()">+ Aggiungi Nuovo Mattone</button>
-        <button class="btn btn-save" onclick="syncAll()">💾 SALVA E SINCRONIZZA DISPOSITIVI</button>
+    <div class="actions">
+        <button class="btn btn-add" onclick="addRow()">+ Aggiungi Riga</button>
+        <button class="btn btn-save" onclick="syncData()">💾 SALVA E SINCRONIZZA TUTTI I DISPOSITIVI</button>
     </div>
 </div>
 
 <script>
-    // CREDENZIALI INTEGRATE
-    const SUPABASE_URL = 'https://dzdbctihpqrgjfhiisxh.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6ZGJjdGlocHFyZ2pmaGlpc3hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODkyNzEsImV4cCI6MjA4Nzc2NTI3MX0.XWhI_mRPXzm36Lq0PFJ2lRm6sFjMfOFWNY4AlXDpqfQ';
-    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const _supabase = window.supabase.createClient('https://dzdbctihpqrgjfhiisxh.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6ZGJjdGlocHFyZ2pmaGlpc3hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODkyNzEsImV4cCI6MjA4Nzc2NTI3MX0.XWhI_mRPXzm36Lq0PFJ2lRm6sFjMfOFWNY4AlXDpqfQ');
+    
+    let currentData = [];
+    let tableSchema = [];
 
-    let prodottiLocali = [];
+    // Definiamo le colonne per ogni tabella (escludendo id e macrocategoria che gestiamo noi)
+    const columnsMap = {
+        mattoni_genesis: ['nome', 'prezzo_pz', 'pz_m2', 'pz_scatola', 'pz_bancale', 'kg_bancale', 'sfuso'],
+        mattoni_futura: ['nome', 'prezzo_pz', 'pz_m2', 'pz_bancale', 'kg_bancale', 'sfuso'],
+        mattoni_croma: ['nome', 'prezzo_pz', 'pz_m2', 'pz_bancale', 'kg_bancale', 'sfuso'],
+        mattoni_fortis: ['nome', 'prezzo_pz', 'pz_m2_coltello', 'pz_m2_piatto', 'pz_bancale', 'kg_bancale', 'sfuso'],
+        mattoni_cotto: ['nome', 'prezzo_pz', 'pz_m2', 'pz_bancale', 'kg_bancale', 'sfuso'],
+        pietre_posa_incerta: ['nome', 'prezzo_unita', 'pz_ml', 'm2_bancale', 'pz_bancale', 'kg_bancale', 'sfuso'],
+        pietre_pannelli: ['nome', 'prezzo_m2', 'm2_scatola', 'm2_bancale', 'kg_bancale', 'sfuso'],
+        pietre_rettangolare: ['nome', 'prezzo_m2', 'm2_bancale', 'kg_bancale', 'sfuso'],
+        pietre_pavimentazione: ['nome', 'prezzo_m2', 'm2_bancale', 'kg_bancale', 'sfuso'],
+        pietre_tetti: ['nome', 'prezzo_pz', 'pz_m2', 'pz_bancale', 'kg_bancale', 'sfuso'],
+        legno_rivestimenti: ['nome', 'prezzo_m2', 'sfuso'],
+        legno_pavimenti: ['nome', 'prezzo_m2', 'sfuso']
+    };
 
     async function fetchData() {
-        updateStatus("Scaricamento dati in corso...");
-        const { data, error } = await _supabase
-            .from('genesis_mattoni_pieni')
-            .select('*')
-            .order('nome_prodotto', { ascending: true });
-
+        const tableName = document.getElementById('table-selector').value;
+        updateStatus("Caricamento in corso...", "#2980b9");
+        
+        const { data, error } = await _supabase.from(tableName).select('*').order('id');
+        
         if (error) {
-            updateStatus("Errore: " + error.message, true);
-        } else {
-            prodottiLocali = data;
-            renderTable();
-            updateStatus("Tutti i dati sono aggiornati.");
+            updateStatus("Errore: Tabella non trovata nel database!", "red");
+            return;
         }
+
+        currentData = data;
+        tableSchema = columnsMap[tableName];
+        renderTable();
+        updateStatus("Dati caricati correttamente.", "green");
     }
 
     function renderTable() {
-        const tbody = document.getElementById('table-body');
-        tbody.innerHTML = '';
-
-        prodottiLocali.forEach((p, index) => {
+        const head = document.getElementById('table-head');
+        const body = document.getElementById('table-body');
+        
+        // Genera Intestazione
+        head.innerHTML = `<tr>${tableSchema.map(col => `<th>${col.replace('_', ' ')}</th>`).join('')}<th>Azioni</th></tr>`;
+        
+        // Genera Righe
+        body.innerHTML = '';
+        currentData.forEach((row, rowIndex) => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><input type="text" value="${p.nome_prodotto || ''}" onchange="updateLocal(${index}, 'nome_prodotto', this.value)"></td>
-                <td><input type="number" step="0.01" value="${p.prezzo_pz || 0}" onchange="updateLocal(${index}, 'prezzo_pz', this.value)"></td>
-                <td><input type="number" value="${p.pz_m2 || 0}" onchange="updateLocal(${index}, 'pz_m2', this.value)"></td>
-                <td><input type="number" value="${p.pz_bancale || 0}" onchange="updateLocal(${index}, 'pz_bancale', this.value)"></td>
-                <td><input type="number" value="${p.kg_bancale || 0}" onchange="updateLocal(${index}, 'kg_bancale', this.value)"></td>
-                <td><input type="text" value="${p.sfuso || 'no'}" onchange="updateLocal(${index}, 'sfuso', this.value.toLowerCase())" placeholder="si/no"></td>
-                <td><button class="btn btn-del" onclick="deleteRow(${index}, ${p.id})">Elimina</button></td>
-            `;
-            tbody.appendChild(tr);
+            tableSchema.forEach(col => {
+                const td = document.createElement('td');
+                const input = document.createElement('input');
+                input.value = row[col] || '';
+                input.oninput = (e) => currentData[rowIndex][col] = e.target.value;
+                td.appendChild(input);
+                tr.appendChild(td);
+            });
+            
+            // Bottone Elimina
+            const actionTd = document.createElement('td');
+            actionTd.innerHTML = `<button class="btn btn-del" onclick="deleteRow(${row.id}, ${rowIndex})">ELIMINA</button>`;
+            tr.appendChild(actionTd);
+            body.appendChild(tr);
         });
     }
 
-    function updateLocal(index, field, value) {
-        prodottiLocali[index][field] = (field === 'nome_prodotto' || field === 'sfuso') ? value : parseFloat(value);
-        updateStatus("Modifiche non salvate...", false, true);
-    }
-
     function addRow() {
-        const nuovo = {
-            nome_prodotto: "Nuovo Mattone",
-            prezzo_pz: 0,
-            pz_m2: 58,
-            pz_bancale: 600,
-            kg_bancale: 1200,
-            sfuso: "no",
-            gamma: "Genesis",
-            sottocategoria: "Mattoni Pieni"
-        };
-        prodottiLocali.push(nuovo);
+        const tableName = document.getElementById('table-selector').value;
+        const newRow = {};
+        tableSchema.forEach(col => newRow[col] = (col === 'sfuso' ? 'no' : ''));
+        currentData.push(newRow);
         renderTable();
     }
 
-    async function deleteRow(index, id) {
+    async function syncData() {
+        const tableName = document.getElementById('table-selector').value;
+        updateStatus("Sincronizzazione...", "orange");
+
+        // Pulizia dati (rimozione id nulli per nuovi inserimenti)
+        const cleanData = currentData.map(item => {
+            const { id, ...rest } = item;
+            return item.id ? item : rest;
+        });
+
+        const { error } = await _supabase.from(tableName).upsert(cleanData);
+
+        if (error) {
+            updateStatus("Errore durante il salvataggio: " + error.message, "red");
+        } else {
+            updateStatus("DATABASE AGGIORNATO CON SUCCESSO!", "#27ae60");
+            fetchData(); // Ricarica per avere gli ID aggiornati
+        }
+    }
+
+    async function deleteRow(id, index) {
         if (!id) {
-            prodottiLocali.splice(index, 1);
+            currentData.splice(index, 1);
             renderTable();
             return;
         }
-        
-        if (confirm("Vuoi eliminare definitivamente questo prodotto dal database cloud?")) {
-            const { error } = await _supabase.from('genesis_mattoni_pieni').delete().eq('id', id);
+
+        if (confirm("Sei sicuro di voler eliminare definitivamente questo prodotto?")) {
+            const tableName = document.getElementById('table-selector').value;
+            const { error } = await _supabase.from(tableName).delete().eq('id', id);
             if (!error) fetchData();
         }
     }
 
-    async function syncAll() {
-        updateStatus("Sincronizzazione con il cloud...");
-        
-        // Pulizia dati per evitare errori di invio
-        const datiDaInviare = prodottiLocali.map(({ created_at, ...rest }) => rest);
-
-        const { error } = await _supabase
-            .from('genesis_mattoni_pieni')
-            .upsert(datiDaInviare, { onConflict: 'id' });
-
-        if (error) {
-            alert("Errore critico: " + error.message);
-            updateStatus("Errore nel salvataggio", true);
-        } else {
-            alert("Database aggiornato correttamente su tutti i dispositivi!");
-            fetchData();
-        }
+    function updateStatus(msg, color) {
+        const s = document.getElementById('status');
+        s.innerText = msg;
+        s.style.color = color;
     }
 
-    function updateStatus(msg, isError = false, isWarning = false) {
-        const el = document.getElementById('status');
-        el.innerText = msg;
-        el.style.color = isError ? "#e74c3c" : (isWarning ? "#e67e22" : "#636e72");
-    }
-
+    // Caricamento iniziale
     fetchData();
 </script>
 </body>
-</html> 
+</html>
