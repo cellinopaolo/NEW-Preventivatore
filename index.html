@@ -3,99 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preventivatore - Selezione Categoria</title>
+    <title>Genesis - Preventivatore</title>
     <style>
         :root { --primary: #2c3e50; --bg: #f4f7f6; --accent: #2980b9; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
         .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
-        h1 { color: var(--primary); text-align: center; font-size: 1.4rem; margin-bottom: 25px; }
-
-        /* Stile Macro-Categorie (Mattoni, Pietra, Legno) */
-        .category-group { margin-bottom: 10px; border-radius: 12px; overflow: hidden; border: 1px solid #eee; }
-        .category-header { 
-            background: #fff; padding: 18px; cursor: pointer; display: flex; 
-            justify-content: space-between; align-items: center; font-weight: bold;
-            transition: background 0.3s;
-        }
-        .category-header:hover { background: #f8f9fa; }
-        
-        /* Contenitore Gamme (Nascosto di default) */
-        .gamma-list { display: none; background: #fdfdfd; padding: 5px 0; border-top: 1px solid #f0f0f0; }
-        .gamma-item { 
-            display: block; padding: 12px 40px; text-decoration: none; color: #555;
-            font-size: 1rem; border-bottom: 1px solid #f9f9f9; transition: 0.2s;
-        }
-        .gamma-item:hover { background: #f0f7ff; color: var(--accent); padding-left: 45px; }
-        .gamma-item:last-child { border-bottom: none; }
-
+        .category-group { margin-bottom: 10px; border: 1px solid #eee; border-radius: 12px; overflow: hidden; }
+        .header { padding: 18px; cursor: pointer; display: flex; justify-content: space-between; font-weight: bold; background: #fff; }
+        .gamma-list { display: none; background: #fdfdfd; border-top: 1px solid #f0f0f0; }
+        .gamma-item { display: block; padding: 12px 25px; text-decoration: none; color: #555; border-bottom: 1px solid #f9f9f9; font-size: 0.95rem; }
         .active .gamma-list { display: block; }
-        .active .category-header { background: #f0f7ff; color: var(--accent); }
-        
-        .arrow { transition: transform 0.3s; font-size: 0.8rem; }
-        .active .arrow { transform: rotate(90deg); }
-
-        .btn-db { 
-            display: block; text-align: center; margin-top: 30px; padding: 12px;
-            color: #bdc3c7; text-decoration: none; font-size: 0.8rem; border: 1px dashed #ddd; border-radius: 10px;
-        }
+        .active .header { background: #f0f7ff; color: var(--accent); }
     </style>
 </head>
 <body>
-
 <div class="card">
-    <h1>Preventivatore Cloud</h1>
-
-    <div class="category-group" id="group-mattoni">
-        <div class="category-header" onclick="toggleGroup('group-mattoni')">
-            <span>🧱 MATTONI</span>
-            <span class="arrow">▶</span>
-        </div>
+    <h2 style="text-align:center">Preventivatore Cloud</h2>
+    
+    <div class="category-group" id="m-mattoni">
+        <div class="header" onclick="toggle('m-mattoni')">🧱 MATTONI <span>▼</span></div>
         <div class="gamma-list">
-            <a href="calcolo.html?gamma=Genesis" class="gamma-item">Genesis →</a>
-            <a href="calcolo.html?gamma=Futura" class="gamma-item">Futura →</a>
-            <a href="calcolo.html?gamma=Croma" class="gamma-item">Croma →</a>
-            <a href="calcolo.html?gamma=Fortis" class="gamma-item">Fortis →</a>
-            <a href="calcolo.html?gamma=Cotto" class="gamma-item">Cotto →</a>
+            <a href="calcolo.html?t=mattoni_genesis&g=Genesis" class="gamma-item">Genesis →</a>
+            <a href="calcolo.html?t=mattoni_futura&g=Futura" class="gamma-item">Futura →</a>
+            <a href="calcolo.html?t=mattoni_croma&g=Croma" class="gamma-item">Croma →</a>
+            <a href="calcolo.html?t=mattoni_fortis&g=Fortis" class="gamma-item">Fortis →</a>
+            <a href="calcolo.html?t=mattoni_cotto&g=Cotto" class="gamma-item">Cotto →</a>
         </div>
     </div>
 
-    <div class="category-group" id="group-pietra">
-        <div class="category-header" onclick="toggleGroup('group-pietra')">
-            <span>🪨 PIETRA</span>
-            <span class="arrow">▶</span>
-        </div>
+    <div class="category-group" id="m-pietre">
+        <div class="header" onclick="toggle('m-pietre')">🪨 PIETRE <span>▼</span></div>
         <div class="gamma-list">
-            <a href="calcolo.html?gamma=PosaIncerta" class="gamma-item">Posa incerta →</a>
-            <a href="calcolo.html?gamma=Pannelli" class="gamma-item">Pannelli preassemblati →</a>
+            <a href="calcolo.html?t=pietre_posa_incerta&g=Posa incerta" class="gamma-item">Posa incerta →</a>
+            <a href="calcolo.html?t=pietre_pannelli&g=Pannelli preassemblati" class="gamma-item">Pannelli preassemblati →</a>
+            <a href="calcolo.html?t=pietre_rettangolare&g=Taglio Rettangolare" class="gamma-item">Taglio Rettangolare →</a>
+            <a href="calcolo.html?t=pietre_pavimentazione&g=Pavimentazione pietra" class="gamma-item">Pavimentazione pietra →</a>
+            <a href="calcolo.html?t=pietre_tetti&g=Tetti" class="gamma-item">Tetti →</a>
         </div>
     </div>
 
-    <div class="category-group" id="group-legno">
-        <div class="category-header" onclick="toggleGroup('group-legno')">
-            <span>🪵 LEGNO</span>
-            <span class="arrow">▶</span>
-        </div>
+    <div class="category-group" id="m-legno">
+        <div class="header" onclick="toggle('m-legno')">🪵 LEGNO <span>▼</span></div>
         <div class="gamma-list">
-            <a href="calcolo.html?gamma=Rivestimenti" class="gamma-item">Rivestimenti →</a>
-            <a href="calcolo.html?gamma=Pavimenti" class="gamma-item">Pavimenti →</a>
+            <a href="calcolo.html?t=legno_rivestimenti&g=Rivestimenti" class="gamma-item">Rivestimenti →</a>
+            <a href="calcolo.html?t=legno_pavimenti&g=Pavimenti legno" class="gamma-item">Pavimenti legno →</a>
         </div>
     </div>
 
-    <a href="listini.html" class="btn-db">⚙️ Gestione Database (Excel Style)</a>
+    <a href="listini.html" style="display:block; text-align:center; margin-top:20px; font-size:0.8rem; color:#999; text-decoration:none;">⚙️ Gestione Database</a>
 </div>
 
 <script>
-    function toggleGroup(id) {
-        const groups = document.querySelectorAll('.category-group');
-        groups.forEach(g => {
-            if (g.id === id) {
-                g.classList.toggle('active');
-            } else {
-                g.classList.remove('active'); // Chiude gli altri quando ne apri uno
-            }
+    function toggle(id) {
+        document.querySelectorAll('.category-group').forEach(el => {
+            if(el.id === id) el.classList.toggle('active');
+            else el.classList.remove('active');
         });
     }
 </script>
-
 </body>
 </html>
