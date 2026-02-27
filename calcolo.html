@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Preventivatore - Calcolo</title>
+    <title>Preventivatore - Calcolo Genesis</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #2c3e50; --bg: #f4f7f6; --accent: #27ae60; }
+        :root { --primary: #2c3e50; --bg: #f4f7f6; --accent: #27ae60; --warning: #e67e22; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
         .header { display: flex; align-items: center; margin-bottom: 20px; }
@@ -13,77 +14,58 @@
         .field { margin-bottom: 15px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.85rem; color: #7f8c8d; }
         select, input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
-        .row { display: flex; gap: 10px; }
-        .row div { flex: 1; }
-        .info-box { background: #f8f9fa; border-left: 4px solid var(--accent); padding: 10px; margin-top: 15px; font-size: 0.9rem; }
+        .row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .info-box { background: #f8f9fa; border-left: 4px solid var(--accent); padding: 12px; font-size: 0.9rem; border-radius: 0 8px 8px 0; margin-bottom: 15px; }
+        .weight-badge { display: inline-block; background: var(--warning); color: white; padding: 4px 8px; border-radius: 5px; font-size: 0.75rem; font-weight: bold; margin-top: 5px; }
         .result-box { background: var(--primary); color: white; padding: 20px; border-radius: 10px; margin-top: 20px; text-align: center; }
         .total-price { font-size: 2.2rem; font-weight: bold; margin: 5px 0; }
-        .hidden { display: none; }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 1000; font-weight: bold; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
+    <div id="loading" class="loading-overlay">Sincronizzazione listino...</div>
+
     <div class="card">
         <div class="header">
             <a href="index.html" class="back-btn">←</a>
-            <h2 id="gamma-title">Gamma</h2>
+            <h2 id="gamma-title">Genesis</h2>
         </div>
 
         <div class="field">
-            <label>Seleziona Prodotto</label>
+            <label>Seleziona Prodotto (Mattoni Pieni)</label>
             <select id="select-prodotto" onchange="eseguiCalcolo()"></select>
         </div>
 
-        <div id="box-fortis" class="field hidden">
-            <label>Tipo di Posa (Fortis)</label>
-            <select id="posa-fortis" onchange="eseguiCalcolo()">
-                <option value="piatto">Di Piatto</option>
-                <option value="coltello">Di Coltello</option>
-            </select>
-        </div>
-
         <div class="row">
-            <div class="field">
+            <div style="flex:2">
                 <label>Quantità</label>
                 <input type="number" id="quantita" placeholder="0" oninput="eseguiCalcolo()">
             </div>
-            <div class="field">
+            <div style="flex:1">
                 <label>Unità</label>
                 <select id="unita" onchange="eseguiCalcolo()">
                     <option value="m2">m²</option>
-                    <option value="ml">ml</option>
                     <option value="pezzi">Pezzi</option>
                 </select>
             </div>
         </div>
 
         <div class="field">
-            <label>Quantità Extra / Sfrido (in Unità)</label>
+            <label>Extra / Sfrido (Unità)</label>
             <input type="number" id="extra" value="0" oninput="eseguiCalcolo()">
         </div>
 
         <div class="row">
-            <div class="field">
-                <label>Cliente</label>
-                <select id="tipo-cliente" onchange="eseguiCalcolo()">
-                    <option value="privato">Privato</option>
-                    <option value="azienda">Azienda</option>
-                </select>
-            </div>
-            <div class="field">
+            <div style="flex:1">
                 <label>Sconto Part. (%)</label>
                 <input type="number" id="sconto-part" value="0" oninput="eseguiCalcolo()">
             </div>
-        </div>
-
-        <div class="field">
-            <label>Sconto Extra aggiuntivo (%)</label>
-            <input type="number" id="sconto-extra" value="0" oninput="eseguiCalcolo()">
-        </div>
-
-        <div class="field">
-            <label>Trasporto (€)</label>
-            <input type="number" id="trasporto" value="0" oninput="eseguiCalcolo()">
+            <div style="flex:1">
+                <label>Trasporto (€)</label>
+                <input type="number" id="trasporto" value="0" oninput="eseguiCalcolo()">
+            </div>
         </div>
 
         <div id="logistica-info" class="info-box hidden"></div>
@@ -91,98 +73,90 @@
         <div class="result-box">
             <div style="opacity: 0.8; font-size: 0.9rem;">Totale (IVA escl.)</div>
             <div class="total-price" id="prezzo-finale">€ 0,00</div>
-            <div id="dettaglio-finale" style="font-size: 0.85rem; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2);">
-                Inserisci dati per il calcolo
-            </div>
+            <div id="dettaglio-finale" style="font-size: 0.8rem; margin-top: 10px; opacity: 0.7;"></div>
         </div>
     </div>
 
     <script>
-        // RECUPERO DATI DAL LOCALSTORAGE (DATABASE ADMIN)
-        let databaseCompleto = JSON.parse(localStorage.getItem('preventivatore_db')) || [
-            // Dati di fallback se il database è vuoto
-            { n: "Genesis 415", g: "genesis", p: 2.40, r: 58, ps: 1, pb: 600, s: "no" },
-            { n: "Genesis 415LS", g: "genesis", p: 2.40, r: 58, ps: 30, pb: 1680, s: "si" },
-            { n: "Genesis 415AG", g: "genesis", p: 5.50, r: 13, ps: 16, pb: 1024, s: "si" }
-        ];
+        const SUPABASE_URL = 'https://dzdbctihpqrgjfhiisxh.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6ZGJjdGlocHFyZ2pmaGlpc3hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODkyNzEsImV4cCI6MjA4Nzc2NTI3MX0.XWhI_mRPXzm36Lq0PFJ2lRm6sFjMfOFWNY4AlXDpqfQ';
+        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const gammaCorrente = urlParams.get('cat') || 'genesis';
-        document.getElementById('gamma-title').innerText = "Gamma " + gammaCorrente.toUpperCase();
+        let prodotti = [];
 
-        // Mostra box Fortis se necessario
-        if(gammaCorrente === 'fortis') document.getElementById('box-fortis').classList.remove('hidden');
+        async function init() {
+            try {
+                const { data, error } = await _supabase
+                    .from('genesis_mattoni_pieni')
+                    .select('*')
+                    .order('nome_prodotto', { ascending: true });
 
-        // Filtra prodotti per la gamma selezionata
-        const prodottiFiltrati = databaseCompleto.filter(p => p.g === gammaCorrente);
-        const selectProd = document.getElementById('select-prodotto');
+                if (error) throw error;
+                prodotti = data;
 
-        prodottiFiltrati.forEach((p, index) => {
-            let opt = document.createElement('option');
-            opt.value = index;
-            opt.text = p.n;
-            selectProd.add(opt);
-        });
+                const select = document.getElementById('select-prodotto');
+                prodotti.forEach((p, i) => {
+                    let opt = document.createElement('option');
+                    opt.value = i;
+                    opt.text = p.nome_prodotto;
+                    select.add(opt);
+                });
 
-        function eseguiCalcolo() {
-            const prod = prodottiFiltrati[selectProd.value];
-            if (!prod) return;
-
-            let qta = parseFloat(document.getElementById('quantita').value) || 0;
-            let extra = parseFloat(document.getElementById('extra').value) || 0;
-            let unita = document.getElementById('unita').value;
-            let trasporto = parseFloat(document.getElementById('trasporto').value) || 0;
-
-            // Logica resa (gestione speciale Fortis se presente nel DB)
-            let resaEffettiva = prod.r;
-            if(gammaCorrente === 'fortis') {
-                const tipoPosa = document.getElementById('posa-fortis').value;
-                // Se è Fortis, ipotizziamo resa 50 (piatto) o 90 (coltello) se non diversamente specificato
-                resaEffettiva = (tipoPosa === 'coltello') ? 90 : 50;
+                document.getElementById('loading').classList.add('hidden');
+                eseguiCalcolo();
+            } catch (e) {
+                document.getElementById('loading').innerHTML = `<div style="color:red; text-align:center; padding:20px;">Errore caricamento database.<br>Controlla la tabella 'genesis_mattoni_pieni' su Supabase.</div>`;
             }
-
-            // 1. Calcolo pezzi teorici
-            let pzTeorici = (unita === 'pezzi') ? (qta + extra) : (qta + extra) * resaEffettiva;
-            
-            // 2. Logica Arrotondamento Logistica
-            let pzEffettivi = 0;
-            let logInfo = "";
-            let isSfusa = (prod.s.toLowerCase() === 'si');
-
-            if (!isSfusa) {
-                let numBan = Math.ceil(pzTeorici / prod.pb) || 0;
-                pzEffettivi = numBan * prod.pb;
-                logInfo = `Obbligo bancale: ${numBan} x ${prod.pb} pz.`;
-            } else {
-                let numSca = Math.ceil(pzTeorici / prod.ps) || 0;
-                pzEffettivi = numSca * prod.ps;
-                logInfo = `Arrotondato a scatole: ${pzEffettivi} pz.`;
-            }
-
-            // 3. Sconto dinamico (Almeno 1 bancale = 50%, meno = 45%)
-            let scontoBase = (pzEffettivi >= prod.pb) ? 0.50 : 0.45;
-            
-            // 4. Calcolo Prezzo
-            let totaleScontato = (pzEffettivi * prod.p) * (1 - scontoBase);
-            
-            // Sconti extra dell'utente
-            let s1 = parseFloat(document.getElementById('sconto-part').value) || 0;
-            let s2 = parseFloat(document.getElementById('sconto-extra').value) || 0;
-            totaleScontato = totaleScontato * (1 - s1/100) * (1 - s2/100);
-            
-            let totaleFinale = totaleScontato + trasporto;
-
-            // Aggiornamento Interfaccia
-            const infoBox = document.getElementById('logistica-info');
-            infoBox.classList.remove('hidden');
-            infoBox.innerHTML = `<b>${logInfo}</b><br>Sconto base applicato: ${scontoBase*100}%`;
-
-            document.getElementById('prezzo-finale').innerText = "€ " + totaleFinale.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('dettaglio-finale').innerHTML = `Pezzi: ${pzEffettivi} | Sconto Base: ${scontoBase*100}%`;
         }
 
-        // Calcolo iniziale
-        eseguiCalcolo();
+        function eseguiCalcolo() {
+            const p = prodotti[document.getElementById('select-prodotto').value];
+            if (!p) return;
+
+            const qta = (parseFloat(document.getElementById('quantita').value) || 0) + (parseFloat(document.getElementById('extra').value) || 0);
+            const unita = document.getElementById('unita').value;
+
+            // 1. Calcolo Pezzi Teorici
+            let pzTeorici = (unita === 'pezzi') ? qta : qta * p.pz_m2;
+
+            // 2. Arrotondamento (Se sfuso 'si' -> arrotonda a 1, se 'no' -> arrotonda a bancale intero)
+            let pzEffettivi = 0;
+            let numBancali = 0;
+            if (p.sfuso.toLowerCase() === 'si') {
+                pzEffettivi = Math.ceil(pzTeorici);
+                numBancali = pzEffettivi / p.pz_bancale;
+            } else {
+                numBancali = Math.ceil(pzTeorici / p.pz_bancale);
+                pzEffettivi = numBancali * p.pz_bancale;
+            }
+
+            // 3. Calcolo Peso Totale
+            const pesoTotaleKg = numBancali * p.kg_bancale;
+
+            // 4. Sconti e Prezzi
+            const scontoBase = (pzEffettivi >= p.pz_bancale) ? 0.50 : 0.45;
+            const scontoPart = parseFloat(document.getElementById('sconto-part').value) || 0;
+            const trasporto = parseFloat(document.getElementById('trasporto').value) || 0;
+
+            let prezzoLordo = pzEffettivi * p.prezzo_pz;
+            let prezzoScontato = prezzoLordo * (1 - scontoBase) * (1 - (scontoPart / 100));
+            let totaleFinale = prezzoScontato + trasporto;
+
+            // 5. Aggiornamento UI
+            document.getElementById('prezzo-finale').innerText = "€ " + totaleFinale.toLocaleString('it-IT', {minimumFractionDigits: 2});
+            
+            const infoBox = document.getElementById('logistica-info');
+            infoBox.classList.remove('hidden');
+            infoBox.innerHTML = `
+                <b>Logistica:</b> ${pzEffettivi} pz (${numBancali.toFixed(2)} bancali)<br>
+                <b>Sconto applicato:</b> ${scontoBase*100}%<br>
+                <div class="weight-badge">⚖️ Peso stimato: ${(pesoTotaleKg / 1000).toFixed(2)} t</div>
+            `;
+
+            document.getElementById('dettaglio-finale').innerText = `Dettaglio: ${pzEffettivi} pz | Resa: ${p.pz_m2} pz/m2`;
+        }
+
+        init();
     </script>
 </body>
 </html>
