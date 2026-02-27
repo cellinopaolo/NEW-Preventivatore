@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Preventivatore - Calcolo Genesis</title>
+    <title>Preventivatore - Calcolo Dinamico</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #2c3e50; --bg: #f4f7f6; --accent: #27ae60; --warning: #e67e22; }
@@ -30,11 +30,11 @@
     <div class="card">
         <div class="header">
             <a href="index.html" class="back-btn">←</a>
-            <h2 id="gamma-title">Genesis</h2>
+            <h2 id="gamma-title">Caricamento...</h2>
         </div>
 
         <div class="field">
-            <label>Seleziona Prodotto (Mattoni Pieni)</label>
+            <label id="select-label">Seleziona Prodotto</label>
             <select id="select-prodotto" onchange="eseguiCalcolo()"></select>
         </div>
 
@@ -85,27 +85,43 @@
         let prodotti = [];
 
         async function init() {
+            // Legge la gamma dall'URL (es. ?gamma=Futura)
+            const params = new URLSearchParams(window.location.search);
+            const gammaScelta = params.get('gamma') || 'Genesis'; 
+
+            // Aggiorna il titolo della pagina
+            document.getElementById('gamma-title').innerText = gammaScelta;
+            document.getElementById('select-label').innerText = `Seleziona Prodotto (${gammaScelta})`;
+
             try {
+                // Filtra i prodotti su Supabase in base alla colonna 'gamma'
                 const { data, error } = await _supabase
                     .from('genesis_mattoni_pieni')
                     .select('*')
+                    .eq('gamma', gammaScelta) 
                     .order('nome_prodotto', { ascending: true });
 
                 if (error) throw error;
                 prodotti = data;
 
                 const select = document.getElementById('select-prodotto');
-                prodotti.forEach((p, i) => {
-                    let opt = document.createElement('option');
-                    opt.value = i;
-                    opt.text = p.nome_prodotto;
-                    select.add(opt);
-                });
+                select.innerHTML = ''; 
+
+                if (prodotti.length === 0) {
+                    select.add(new Option(`Nessun prodotto in ${gammaScelta}`, ""));
+                } else {
+                    prodotti.forEach((p, i) => {
+                        let opt = document.createElement('option');
+                        opt.value = i;
+                        opt.text = p.nome_prodotto;
+                        select.add(opt);
+                    });
+                }
 
                 document.getElementById('loading').classList.add('hidden');
                 eseguiCalcolo();
             } catch (e) {
-                document.getElementById('loading').innerHTML = `<div style="color:red; text-align:center; padding:20px;">Errore caricamento database.<br>Controlla la tabella 'genesis_mattoni_pieni' su Supabase.</div>`;
+                document.getElementById('loading').innerHTML = `<div style="color:red; text-align:center; padding:20px;">Errore caricamento listino ${gammaScelta}.</div>`;
             }
         }
 
@@ -116,33 +132,27 @@
             const qta = (parseFloat(document.getElementById('quantita').value) || 0) + (parseFloat(document.getElementById('extra').value) || 0);
             const unita = document.getElementById('unita').value;
 
-            // 1. Calcolo Pezzi Teorici
             let pzTeorici = (unita === 'pezzi') ? qta : qta * p.pz_m2;
 
-            // 2. Arrotondamento (Se sfuso 'si' -> arrotonda a 1, se 'no' -> arrotonda a bancale intero)
             let pzEffettivi = 0;
             let numBancali = 0;
-            if (p.sfuso.toLowerCase() === 'si') {
+            if (p.sfuso && p.sfuso.toLowerCase() === 'si') {
                 pzEffettivi = Math.ceil(pzTeorici);
                 numBancali = pzEffettivi / p.pz_bancale;
             } else {
-                numBancali = Math.ceil(pzTeorici / p.pz_bancale);
-                pzEffettivi = numBancali * p.pz_bancale;
+                numBancali = Math.ceil(pzTeorici / (p.pz_bancale || 1));
+                pzEffettivi = numBancali * (p.pz_bancale || 1);
             }
 
-            // 3. Calcolo Peso Totale
-            const pesoTotaleKg = numBancali * p.kg_bancale;
-
-            // 4. Sconti e Prezzi
-            const scontoBase = (pzEffettivi >= p.pz_bancale) ? 0.50 : 0.45;
+            const pesoTotaleKg = numBancali * (p.kg_bancale || 0);
+            const scontoBase = (pzEffettivi >= (p.pz_bancale || 1)) ? 0.50 : 0.45;
             const scontoPart = parseFloat(document.getElementById('sconto-part').value) || 0;
             const trasporto = parseFloat(document.getElementById('trasporto').value) || 0;
 
-            let prezzoLordo = pzEffettivi * p.prezzo_pz;
+            let prezzoLordo = pzEffettivi * (p.prezzo_pz || 0);
             let prezzoScontato = prezzoLordo * (1 - scontoBase) * (1 - (scontoPart / 100));
             let totaleFinale = prezzoScontato + trasporto;
 
-            // 5. Aggiornamento UI
             document.getElementById('prezzo-finale').innerText = "€ " + totaleFinale.toLocaleString('it-IT', {minimumFractionDigits: 2});
             
             const infoBox = document.getElementById('logistica-info');
