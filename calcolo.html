@@ -124,71 +124,94 @@
         const trasporto = parseFloat(document.getElementById('trasporto').value) || 0;
         const nota = document.getElementById('nota-arrotondamento');
 
-        // 1. DETERMINAZIONE RESA E PEZZI TEORICI
-        let resa = parseFloat(p.pz_m2) || 1;
-        if (tabellaAttuale === "mattoni_fortis") {
-            const posa = document.getElementById('tipo-posa').value;
-            resa = (posa === 'coltello') ? parseFloat(p.pz_m2_coltello) : parseFloat(p.pz_m2_piatto);
-        }
-        let pzTeorici = (unita === 'mq') ? totaleQtaInput * resa : totaleQtaInput;
-        
-        // 2. ARROTONDAMENTO SECONDO VINCOLI IMBALLO
-        let pzFinali = Math.ceil(pzTeorici);
-        const nomeP = p.nome.toUpperCase();
-        const pzBancale = parseInt(p.pz_bancale) || 0;
-        const pzScatola = parseInt(p.pz_scatola) || 0;
-
-        // Regola Bancale: Fortis, Cotto sempre. Genesis/Croma solo se NON sono LS o AG.
-        const forzaBancale = (tabellaAttuale === "mattoni_fortis" || tabellaAttuale === "mattoni_cotto") || 
-                             ((tabellaAttuale === "mattoni_genesis" || tabellaAttuale === "mattoni_croma") && !nomeP.includes("LS") && !nomeP.includes("AG"));
-
-        if (forzaBancale && pzBancale > 0) {
-            let nBancali = Math.ceil(pzFinali / pzBancale);
-            pzFinali = nBancali * pzBancale;
-        } else if (pzScatola > 0 && (nomeP.includes("LS") || nomeP.includes("AG"))) {
-            let nScatole = Math.ceil(pzFinali / pzScatola);
-            pzFinali = nScatole * pzScatola;
-        }
-
-        // 3. LOGICA SCONTO BASE (45% o 50% basato sul bancale)
+        let qtaFinaleArrotondata = 0;
+        let lordoMerce = 0;
         let sBasePerc = 0;
+        let sogliaSconto50 = 0; 
+
+        // --- LOGICA MACROCATEGORIA MATTONI (CONGELATA) ---
+        if (tabellaAttuale.startsWith('mattoni')) {
+            let resa = parseFloat(p.pz_m2) || 1;
+            if (tabellaAttuale === "mattoni_fortis") {
+                const posa = document.getElementById('tipo-posa').value;
+                resa = (posa === 'coltello') ? parseFloat(p.pz_m2_coltello) : parseFloat(p.pz_m2_piatto);
+            }
+            let pzTeorici = (unita === 'mq') ? totaleQtaInput * resa : totaleQtaInput;
+            let pzTemp = Math.ceil(pzTeorici);
+            
+            const nomeP = p.nome.toUpperCase();
+            const pzB = parseInt(p.pz_bancale) || 0;
+            sogliaSconto50 = pzB;
+
+            const forzaBancale = (tabellaAttuale === "mattoni_fortis" || tabellaAttuale === "mattoni_cotto") || 
+                                 ((tabellaAttuale === "mattoni_genesis" || tabellaAttuale === "mattoni_croma") && !nomeP.includes("LS") && !nomeP.includes("AG"));
+
+            if (forzaBancale && pzB > 0) {
+                qtaFinaleArrotondata = Math.ceil(pzTemp / pzB) * pzB;
+            } else if (parseInt(p.pz_scatola) > 0 && (nomeP.includes("LS") || nomeP.includes("AG"))) {
+                let pzS = parseInt(p.pz_scatola);
+                qtaFinaleArrotondata = Math.ceil(pzTemp / pzS) * pzS;
+            } else {
+                qtaFinaleArrotondata = pzTemp;
+            }
+            lordoMerce = qtaFinaleArrotondata * (parseFloat(p.prezzo_pz) || 0);
+        }
+
+        // --- LOGICA MACROCATEGORIA PIETRE (MAPPATURA NUOVE COLONNE) ---
+        else if (tabellaAttuale.startsWith('pietre')) {
+            let prezzoRif = parseFloat(p.prezzo_m2) || parseFloat(p.prezzo_unita) || parseFloat(p.prezzo_pz) || 0;
+            let qtaLavoro = totaleQtaInput;
+
+            if (p.sfuso === 'no') {
+                if (p.m2_bancale) {
+                    let m2B = parseFloat(p.m2_bancale);
+                    qtaLavoro = Math.ceil(qtaLavoro / m2B) * m2B;
+                    sogliaSconto50 = m2B;
+                } else if (p.pz_bancale) {
+                    let pzB = parseInt(p.pz_bancale);
+                    qtaLavoro = Math.ceil(qtaLavoro / pzB) * pzB;
+                    sogliaSconto50 = pzB;
+                } else if (p.m2_scatola) {
+                    let m2S = parseFloat(p.m2_scatola);
+                    qtaLavoro = Math.ceil(qtaLavoro / m2S) * m2S;
+                    sogliaSconto50 = 0; // Se venduto a scatole, lo sconto 50% solitamente non è automatico su una scatola
+                }
+            } else {
+                sogliaSconto50 = parseFloat(p.m2_bancale) || parseInt(p.pz_bancale) || 0;
+            }
+
+            qtaFinaleArrotondata = qtaLavoro;
+            lordoMerce = qtaFinaleArrotondata * prezzoRif;
+        }
+
+        // --- CALCOLO SCONTI E FINALE ---
         const manualSconto = document.getElementById('sconto').value;
         if (manualSconto !== "") {
             sBasePerc = parseFloat(manualSconto);
         } else {
-            sBasePerc = (pzBancale > 0 && pzFinali >= pzBancale) ? 50 : 45;
+            sBasePerc = (sogliaSconto50 > 0 && qtaFinaleArrotondata >= sogliaSconto50) ? 50 : 45;
             document.getElementById('sconto').placeholder = sBasePerc + "%";
         }
 
-        // 4. CALCOLO MATEMATICO PASSO-PASSO (Lordo -> Sconto Base -> Sconto Extra)
-        const prezzoPz = parseFloat(p.prezzo_pz) || 0;
-        const lordoMerce = pzFinali * prezzoPz;
-        
-        // Applicazione Sconto Base
-        const imponibileDopoScontoBase = lordoMerce * (1 - (sBasePerc / 100));
-        // Applicazione Sconto Extra (su valore già scontato)
-        const imponibileNettoMerce = imponibileDopoScontoBase * (1 - (sExtraPerc / 100));
-        
-        // Aggiunta Trasporto
-        const totaleImponibile = imponibileNettoMerce + trasporto;
+        const imponibileBase = lordoMerce * (1 - (sBasePerc / 100));
+        const imponibileNetto = imponibileBase * (1 - (sExtraPerc / 100));
+        const totaleImponibile = imponibileNetto + trasporto;
 
-        // 5. GESTIONE IVA PRIVATI
-        let cifraFinale = totaleImponibile;
+        let totaleVisualizzato = totaleImponibile;
         if (tipoCliente === 'privato') {
-            cifraFinale = totaleImponibile * 1.22;
+            totaleVisualizzato = totaleImponibile * 1.22;
             document.getElementById('label-iva').innerText = "TOTALE (IVA INCLUSA 22%)";
         } else {
             document.getElementById('label-iva').innerText = "TOTALE (IVA ESCLUSA)";
         }
 
-        // 6. OUTPUT UI
-        document.getElementById('prezzo-finale').innerText = "€ " + cifraFinale.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        document.getElementById('dettaglio-pz').innerText = `Pezzi: ${pzFinali} | Sconti: ${sBasePerc}% + ${sExtraPerc}% | Imponibile: € ${totaleImponibile.toFixed(2)}`;
+        // --- AGGIORNAMENTO INTERFACCIA ---
+        document.getElementById('prezzo-finale').innerText = "€ " + totaleVisualizzato.toLocaleString('it-IT', {minimumFractionDigits: 2});
+        document.getElementById('dettaglio-pz').innerText = `Quantità: ${qtaFinaleArrotondata} | Sconti: ${sBasePerc}% + ${sExtraPerc}% | Imponibile: € ${totaleImponibile.toFixed(2)}`;
         
-        if (pzFinali > Math.ceil(pzTeorici)) {
+        if (qtaFinaleArrotondata > totaleQtaInput && unita === 'mq') {
             nota.style.display = 'block';
-            const numUnita = forzaBancale ? (pzFinali/pzBancale).toFixed(0) + " bancale/i" : (pzFinali/pzScatola).toFixed(0) + " scatola/e";
-            nota.innerText = `Arrotondato a ${pzFinali} pz per completare ${numUnita}.`;
+            nota.innerText = `Arrotondato a ${qtaFinaleArrotondata} per vincoli di imballo intero.`;
         } else {
             nota.style.display = 'none';
         }
