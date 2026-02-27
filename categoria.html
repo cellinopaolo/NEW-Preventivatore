@@ -8,13 +8,10 @@
     <title>Dettaglio Categoria</title>
     <style>
         :root { --primary: #2c3e50; --bg: #f4f7f6; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; }
-        
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; }
         .header { display: flex; align-items: center; margin-bottom: 20px; }
         .back-btn { text-decoration: none; font-size: 1.5rem; margin-right: 15px; color: var(--primary); }
-        
         .product-list { display: flex; flex-direction: column; gap: 10px; }
-        
         .product-card {
             background: white;
             padding: 20px;
@@ -25,10 +22,8 @@
             align-items: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-
         .product-info h3 { margin: 0; font-size: 1.1rem; color: #333; }
         .product-info p { margin: 5px 0 0; font-size: 0.9rem; color: #7f8c8d; }
-
         .select-btn {
             background: var(--primary);
             color: white;
@@ -38,7 +33,6 @@
             font-weight: bold;
             cursor: pointer;
         }
-
         @media (min-width: 768px) {
             .product-list { display: grid; grid-template-columns: 1fr 1fr; }
         }
@@ -51,20 +45,17 @@
         <h1 id="category-title">Caricamento...</h1>
     </div>
 
-    <div id="product-list" class="product-list">
-        </div>
+    <div id="product-list" class="product-list"></div>
 
     <script>
-        // Simulazione Database (che poi sposteremo su un file JSON o DB vero)
         const database = {
             "genesis": [
                 { nome: "Genesis 415", tipo: "Mattone Pieno" },
                 { nome: "Genesis 415LS", tipo: "Listello" },
                 { nome: "Genesis 415AG", tipo: "Angolare" }
             ],
-            "futura": [
-                { nome: "Futura 226LS", tipo: "Listello" },
-                { nome: "Futura 226AG", tipo: "Angolare" }
+            "fortis": [
+                { nome: "Fortis 777", tipo: "Mattone Pieno" }
             ],
             "croma": [
                 { nome: "Croma 43", tipo: "Mattone Pieno" },
@@ -73,16 +64,13 @@
             ]
         };
 
-        // Legge il parametro dalla URL (es. ?cat=genesis)
         const urlParams = new URLSearchParams(window.location.search);
         const catKey = urlParams.get('cat');
-
         const titleEl = document.getElementById('category-title');
         const listEl = document.getElementById('product-list');
 
         if (catKey && database[catKey]) {
-            titleEl.innerText = catKey.charAt(0).toUpperCase() + catKey.slice(1);
-            
+            titleEl.innerText = "Gamma " + catKey.toUpperCase();
             database[catKey].forEach(prod => {
                 const card = document.createElement('div');
                 card.className = 'product-card';
@@ -99,9 +87,9 @@
             titleEl.innerText = "Categoria non trovata";
         }
 
-        function vaiAlPreventivo(nome) {
-            alert("Hai selezionato: " + nome + ". Ora passeremo alla fase di calcolo!");
-            // Qui reindirizzeremo alla pagina di calcolo
+        function vaiAlPreventivo(nomeProdotto) {
+            const currentCat = new URLSearchParams(window.location.search).get('cat');
+            window.location.href = `calcolo.html?cat=${currentCat}&prod=${encodeURIComponent(nomeProdotto)}`;
         }
     </script>
 </body>
