@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Dettaglio Categoria</title>
+    <style>
+        :root { --primary: #2c3e50; --bg: #f4f7f6; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; }
+        
+        .header { display: flex; align-items: center; margin-bottom: 20px; }
+        .back-btn { text-decoration: none; font-size: 1.5rem; margin-right: 15px; color: var(--primary); }
+        
+        .product-list { display: flex; flex-direction: column; gap: 10px; }
+        
+        .product-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .product-info h3 { margin: 0; font-size: 1.1rem; color: #333; }
+        .product-info p { margin: 5px 0 0; font-size: 0.9rem; color: #7f8c8d; }
+
+        .select-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        @media (min-width: 768px) {
+            .product-list { display: grid; grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="index.html" class="back-btn">←</a>
+        <h1 id="category-title">Caricamento...</h1>
+    </div>
+
+    <div id="product-list" class="product-list">
+        </div>
+
+    <script>
+        // Simulazione Database (che poi sposteremo su un file JSON o DB vero)
+        const database = {
+            "genesis": [
+                { nome: "Genesis 415", tipo: "Mattone Pieno" },
+                { nome: "Genesis 415LS", tipo: "Listello" },
+                { nome: "Genesis 415AG", tipo: "Angolare" }
+            ],
+            "futura": [
+                { nome: "Futura 226LS", tipo: "Listello" },
+                { nome: "Futura 226AG", tipo: "Angolare" }
+            ],
+            "croma": [
+                { nome: "Croma 43", tipo: "Mattone Pieno" },
+                { nome: "Croma 43LS", tipo: "Listello" },
+                { nome: "Croma 43AG", tipo: "Angolare" }
+            ]
+        };
+
+        // Legge il parametro dalla URL (es. ?cat=genesis)
+        const urlParams = new URLSearchParams(window.location.search);
+        const catKey = urlParams.get('cat');
+
+        const titleEl = document.getElementById('category-title');
+        const listEl = document.getElementById('product-list');
+
+        if (catKey && database[catKey]) {
+            titleEl.innerText = catKey.charAt(0).toUpperCase() + catKey.slice(1);
+            
+            database[catKey].forEach(prod => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <div class="product-info">
+                        <h3>${prod.nome}</h3>
+                        <p>${prod.tipo}</p>
+                    </div>
+                    <button class="select-btn" onclick="vaiAlPreventivo('${prod.nome}')">Seleziona</button>
+                `;
+                listEl.appendChild(card);
+            });
+        } else {
+            titleEl.innerText = "Categoria non trovata";
+        }
+
+        function vaiAlPreventivo(nome) {
+            alert("Hai selezionato: " + nome + ". Ora passeremo alla fase di calcolo!");
+            // Qui reindirizzeremo alla pagina di calcolo
+        }
+    </script>
+</body>
+</html>

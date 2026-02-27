@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Preventivo Tecnico</title>
+    <style>
+        :root { --primary: #2c3e50; --bg: #f4f7f6; --accent: #27ae60; --error: #e74c3c; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        .header { display: flex; align-items: center; margin-bottom: 20px; }
+        .back-btn { text-decoration: none; font-size: 1.2rem; margin-right: 15px; color: var(--primary); }
+        h2 { margin: 0; font-size: 1.3rem; }
+        
+        .field { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.85rem; color: #7f8c8d; }
+        select, input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        
+        .row { display: flex; gap: 10px; }
+        .row div { flex: 1; }
+        
+        .info-box { background: #f8f9fa; border-left: 4px solid var(--accent); padding: 10px; margin-top: 15px; font-size: 0.9rem; }
+        .result-box { background: var(--primary); color: white; padding: 20px; border-radius: 10px; margin-top: 20px; text-align: center; }
+        .total-price { font-size: 2.2rem; font-weight: bold; margin: 5px 0; }
+        .btn-calcola { background: var(--accent); color: white; border: none; width: 100%; padding: 16px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-calcola:active { opacity: 0.8; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="header">
+            <a href="index.html" class="back-btn">←</a>
+            <h2 id="gamma-title">Preventivo</h2>
+        </div>
+
+        <div class="field">
+            <label>Prodotto</label>
+            <select id="select-prodotto" onchange="resetCalcolo()"></select>
+        </div>
+
+        <div class="row">
+            <div class="field">
+                <label>Quantità</label>
+                <input type="number" id="quantita" placeholder="0" oninput="eseguiCalcolo()">
+            </div>
+            <div class="field">
+                <label>Unità</label>
+                <select id="unita" onchange="eseguiCalcolo()">
+                    <option value="m2">m²</option>
+                    <option value="ml">ml</option>
+                    <option value="pezzi">Pezzi</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="field">
+            <label>Quantità Extra / Sfrido (in Unità)</label>
+            <input type="number" id="extra" value="0" oninput="eseguiCalcolo()">
+        </div>
+
+        <div class="row">
+            <div class="field">
+                <label>Cliente</label>
+                <select id="tipo-cliente" onchange="eseguiCalcolo()">
+                    <option value="privato">Privato</option>
+                    <option value="azienda">Azienda</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Sconto Particolare (%)</label>
+                <input type="number" id="sconto-part" value="0" oninput="eseguiCalcolo()">
+            </div>
+        </div>
+
+        <div class="field">
+            <label>Sconto Extra aggiuntivo (%)</label>
+            <input type="number" id="sconto-extra" value="0" oninput="eseguiCalcolo()">
+        </div>
+
+        <div class="field">
+            <label>Trasporto (€)</label>
+            <input type="number" id="trasporto" value="0" oninput="eseguiCalcolo()">
+        </div>
+
+        <div id="logistica-info" class="info-box hidden"></div>
+
+        <div class="result-box">
+            <div style="opacity: 0.8; font-size: 0.9rem;">Totale Preventivo (IVA escl.)</div>
+            <div class="total-price" id="prezzo-finale">€ 0,00</div>
+            <div id="dettaglio-finale" style="font-size: 0.85rem; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
+                Inserisci i dati per il calcolo
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Database tecnico Genesis (espandibile)
+        const database = {
+            "genesis": [
+                { n: "Genesis 415", p: 2.40, resa: 58, pzSca: 1, pzBan: 600, sfusa: false, tipo: "Mattone Pieno" },
+                { n: "Genesis 415LS", p: 2.40, resa: 58, pzSca: 30, pzBan: 1680, sfusa: true, tipo: "Listello" },
+                { n: "Genesis 415AG", p: 5.50, resa: 13, pzSca: 16, pzBan: 1024, sfusa: true, tipo: "Angolare" }
+            ]
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const gamma = urlParams.get('cat') || 'genesis';
+        document.getElementById('gamma-title').innerText = "Gamma " + gamma.toUpperCase();
+
+        // Popolamento select prodotti
+        const selectProd = document.getElementById('select-prodotto');
+        const prodottiGamma = database[gamma] || [];
+        
+        prodottiGamma.forEach((p, index) => {
+            let opt = document.createElement('option');
+            opt.value = index;
+            opt.text = p.n + " (" + p.tipo + ")";
+            selectProd.add(opt);
+        });
+
+        function resetCalcolo() { eseguiCalcolo(); }
+
+        function eseguiCalcolo() {
+            const prod = prodottiGamma[selectProd.value];
+            if (!prod) return;
+
+            let qta = parseFloat(document.getElementById('quantita').value) || 0;
+            let extra = parseFloat(document.getElementById('extra').value) || 0;
+            let unita = document.getElementById('unita').value;
+            let scontoPart = parseFloat(document.getElementById('sconto-part').value) || 0;
+            let scontoExtra = parseFloat(document.getElementById('sconto-extra').value) || 0;
+            let trasporto = parseFloat(document.getElementById('trasporto').value) || 0;
+
+            // 1. Calcolo pezzi necessari
+            let qtaTotaleRichiesta = qta + extra;
+            let pzTeorici = (unita === 'pezzi') ? qtaTotaleRichiesta : qtaTotaleRichiesta * prod.resa;
+            
+            // 2. Logica Arrotondamento Logistico
+            let pzEffettivi = 0;
+            let logInfo = "";
+
+            if (!prod.sfusa) {
+                let numBancali = Math.ceil(pzTeorici / prod.pzBan);
+                if (numBancali === 0 && pzTeorici > 0) numBancali = 1;
+                pzEffettivi = numBancali * prod.pzBan;
+                logInfo = `<b>Logistica:</b> Obbligo bancale intero (${numBancali} x ${prod.pzBan} pz).`;
+            } else {
+                let numScatole = Math.ceil(pzTeorici / prod.pzSca);
+                pzEffettivi = numScatole * prod.pzSca;
+                logInfo = `<b>Logistica:</b> Arrotondato a scatole intere (${numScatole} x ${prod.pzSca} pz).`;
+            }
+
+            // 3. Calcolo Sconto Default (45% o 50%)
+            let scontoBase = (pzEffettivi >= prod.pzBan) ? 0.50 : 0.45;
+            let percScontoBase = scontoBase * 100;
+
+            // 4. Calcolo Economico
+            let prezzoListino = pzEffettivi * prod.p;
+            let prezzoScontatoBase = prezzoListino * (1 - scontoBase);
+            
+            // Applicazione sconti extra a cascata
+            let finale = prezzoScontatoBase;
+            finale -= (finale * (scontoPart / 100));
+            finale -= (finale * (scontoExtra / 100));
+            
+            // Aggiunta trasporto
+            let totaleIvato = finale + trasporto;
+
+            // Aggiornamento UI
+            const infoBox = document.getElementById('logistica-info');
+            infoBox.classList.remove('hidden');
+            infoBox.innerHTML = `${logInfo}<br><b>Sconto applicato:</b> ${percScontoBase}% (Q.tà ${pzEffettivi >= prod.pzBan ? '>=' : '<'} bancale)`;
+
+            document.getElementById('prezzo-finale').innerText = "€ " + totaleIvato.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            
+            document.getElementById('dettaglio-finale').innerHTML = `
+                Pezzi totali: ${pzEffettivi} | Peso stimato: ${((pzEffettivi/prod.pzBan) * 1000).toFixed(0)} kg ca.<br>
+                Sconto base: ${percScontoBase}% ${scontoPart > 0 ? '+ ' + scontoPart + '%' : ''} ${scontoExtra > 0 ? '+ ' + scontoExtra + '%' : ''}
+            `;
+        }
+    </script>
+</body>
+</html>
