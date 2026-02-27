@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Genesis - Mattoni Pieni</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #2c3e50; --accent: #2980b9; --bg: #f4f7f6; --success: #27ae60; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.1); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { border: 1px solid #dfe6e9; padding: 12px; text-align: left; }
+        th { background: #34495e; color: white; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; }
+        tr:hover { background-color: #f1f4f6; }
+        input { width: 100%; border: 1px solid transparent; padding: 8px; box-sizing: border-box; background: transparent; border-radius: 4px; transition: 0.2s; }
+        input:focus { background: white; border: 1px solid var(--accent); outline: none; box-shadow: 0 0 5px rgba(41,128,185,0.2); }
+        .btn { padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-add { background: var(--success); color: white; }
+        .btn-save { background: var(--accent); color: white; }
+        .btn-del { background: #ff7675; color: white; padding: 6px 12px; font-size: 0.8rem; }
+        .btn:active { transform: scale(0.98); }
+        #status { font-size: 0.85rem; color: #636e72; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div>
+            <h2 style="margin:0;">Listino Genesis Cloud</h2>
+            <small>Sottocategoria: <strong>Mattoni Pieni</strong></small>
+        </div>
+        <div style="display: flex; gap: 15px;">
+            <a href="index.html" style="text-decoration:none; color:var(--primary); font-weight:bold;">Torna alla Home</a>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome Prodotto</th>
+                    <th>€ / pz</th>
+                    <th>pz / m²</th>
+                    <th>pz / Bancale</th>
+                    <th>Kg / Bancale</th>
+                    <th>Sfuso (si/no)</th>
+                    <th>Azioni</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                </tbody>
+        </table>
+    </div>
+
+    <div id="status">Inizializzazione connessione...</div>
+
+    <div style="margin-top: 25px; display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn btn-add" onclick="addRow()">+ Aggiungi Nuovo Mattone</button>
+        <button class="btn btn-save" onclick="syncAll()">💾 SALVA E SINCRONIZZA DISPOSITIVI</button>
+    </div>
+</div>
+
+<script>
+    // CREDENZIALI INTEGRATE
+    const SUPABASE_URL = 'https://dzdbctihpqrgjfhiisxh.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6ZGJjdGlocHFyZ2pmaGlpc3hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODkyNzEsImV4cCI6MjA4Nzc2NTI3MX0.XWhI_mRPXzm36Lq0PFJ2lRm6sFjMfOFWNY4AlXDpqfQ';
+    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let prodottiLocali = [];
+
+    async function fetchData() {
+        updateStatus("Scaricamento dati in corso...");
+        const { data, error } = await _supabase
+            .from('genesis_mattoni_pieni')
+            .select('*')
+            .order('nome_prodotto', { ascending: true });
+
+        if (error) {
+            updateStatus("Errore: " + error.message, true);
+        } else {
+            prodottiLocali = data;
+            renderTable();
+            updateStatus("Tutti i dati sono aggiornati.");
+        }
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = '';
+
+        prodottiLocali.forEach((p, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" value="${p.nome_prodotto || ''}" onchange="updateLocal(${index}, 'nome_prodotto', this.value)"></td>
+                <td><input type="number" step="0.01" value="${p.prezzo_pz || 0}" onchange="updateLocal(${index}, 'prezzo_pz', this.value)"></td>
+                <td><input type="number" value="${p.pz_m2 || 0}" onchange="updateLocal(${index}, 'pz_m2', this.value)"></td>
+                <td><input type="number" value="${p.pz_bancale || 0}" onchange="updateLocal(${index}, 'pz_bancale', this.value)"></td>
+                <td><input type="number" value="${p.kg_bancale || 0}" onchange="updateLocal(${index}, 'kg_bancale', this.value)"></td>
+                <td><input type="text" value="${p.sfuso || 'no'}" onchange="updateLocal(${index}, 'sfuso', this.value.toLowerCase())" placeholder="si/no"></td>
+                <td><button class="btn btn-del" onclick="deleteRow(${index}, ${p.id})">Elimina</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function updateLocal(index, field, value) {
+        prodottiLocali[index][field] = (field === 'nome_prodotto' || field === 'sfuso') ? value : parseFloat(value);
+        updateStatus("Modifiche non salvate...", false, true);
+    }
+
+    function addRow() {
+        const nuovo = {
+            nome_prodotto: "Nuovo Mattone",
+            prezzo_pz: 0,
+            pz_m2: 58,
+            pz_bancale: 600,
+            kg_bancale: 1200,
+            sfuso: "no",
+            gamma: "Genesis",
+            sottocategoria: "Mattoni Pieni"
+        };
+        prodottiLocali.push(nuovo);
+        renderTable();
+    }
+
+    async function deleteRow(index, id) {
+        if (!id) {
+            prodottiLocali.splice(index, 1);
+            renderTable();
+            return;
+        }
+        
+        if (confirm("Vuoi eliminare definitivamente questo prodotto dal database cloud?")) {
+            const { error } = await _supabase.from('genesis_mattoni_pieni').delete().eq('id', id);
+            if (!error) fetchData();
+        }
+    }
+
+    async function syncAll() {
+        updateStatus("Sincronizzazione con il cloud...");
+        
+        // Pulizia dati per evitare errori di invio
+        const datiDaInviare = prodottiLocali.map(({ created_at, ...rest }) => rest);
+
+        const { error } = await _supabase
+            .from('genesis_mattoni_pieni')
+            .upsert(datiDaInviare, { onConflict: 'id' });
+
+        if (error) {
+            alert("Errore critico: " + error.message);
+            updateStatus("Errore nel salvataggio", true);
+        } else {
+            alert("Database aggiornato correttamente su tutti i dispositivi!");
+            fetchData();
+        }
+    }
+
+    function updateStatus(msg, isError = false, isWarning = false) {
+        const el = document.getElementById('status');
+        el.innerText = msg;
+        el.style.color = isError ? "#e74c3c" : (isWarning ? "#e67e22" : "#636e72");
+    }
+
+    fetchData();
+</script>
+</body>
+</html>
