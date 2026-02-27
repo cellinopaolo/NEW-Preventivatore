@@ -15,7 +15,7 @@
         select, input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
         .result-box { background: var(--primary); color: white; padding: 20px; border-radius: 10px; margin-top: 20px; text-align: center; }
         .total-price { font-size: 2.2rem; font-weight: bold; }
-        .info-box { background: #e8f4fd; padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 0.85rem; border-left: 4px solid #3498db; }
+        .error-msg { color: #e74c3c; font-size: 0.85rem; margin-top: 10px; text-align: center; font-weight: bold; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -24,11 +24,15 @@
 <div class="card">
     <div class="header">
         <a href="index.html" class="back-btn">←</a>
-        <h2 id="gamma-title">...</h2>
+        <h2 id="gamma-title">Caricamento...</h2>
     </div>
 
+    <div id="error-container" class="error-msg hidden">Nessun prodotto trovato in questa gamma. Aggiungili dal Database!</div>
+
     <label>Seleziona Prodotto</label>
-    <select id="select-prodotto" onchange="eseguiCalcolo()"></select>
+    <select id="select-prodotto" onchange="eseguiCalcolo()">
+        <option value="">-- Seleziona --</option>
+    </select>
 
     <div id="posa-fortis" class="hidden">
         <label>Tipo di Posa</label>
@@ -52,13 +56,10 @@
         </div>
     </div>
 
-    <label>Sconto (%)</label>
-    <input type="number" id="sconto" value="0" oninput="eseguiCalcolo()">
-
-    <label>Trasporto (€)</label>
-    <input type="number" id="trasporto" value="0" oninput="eseguiCalcolo()">
-
-    <div id="logistica" class="info-box hidden"></div>
+    <div style="display:flex; gap:10px;">
+        <div style="flex:1"><label>Sconto (%)</label><input type="number" id="sconto" value="0" oninput="eseguiCalcolo()"></div>
+        <div style="flex:1"><label>Trasporto (€)</label><input type="number" id="trasporto" value="0" oninput="eseguiCalcolo()"></div>
+    </div>
 
     <div class="result-box">
         <div style="font-size:0.8rem; opacity:0.8;">Totale Stimato (IVA Escl.)</div>
@@ -74,60 +75,58 @@
     async function init() {
         const params = new URLSearchParams(window.location.search);
         tabellaAttuale = params.get('t');
-        document.getElementById('gamma-title').innerText = params.get('g') || "Calcolo";
+        const gammaNome = params.get('g');
+        document.getElementById('gamma-title').innerText = gammaNome || "Calcolo";
 
+        if (!tabellaAttuale) return;
         if (tabellaAttuale === "mattoni_fortis") document.getElementById('posa-fortis').classList.remove('hidden');
 
-        const { data } = await _supabase.from(tabellaAttuale).select('*').order('nome');
-        if (data) {
-            prodotti = data;
-            const s = document.getElementById('select-prodotto');
-            prodotti.forEach((p, i) => s.add(new Option(p.nome, i)));
-            eseguiCalcolo();
+        // Caricamento dati
+        const { data, error } = await _supabase.from(tabellaAttuale).select('*').order('nome');
+        
+        if (error || !data || data.length === 0) {
+            document.getElementById('error-container').classList.remove('hidden');
+            return;
         }
+
+        prodotti = data;
+        const select = document.getElementById('select-prodotto');
+        select.innerHTML = '<option value="">-- Seleziona Prodotto --</option>';
+        prodotti.forEach((p, i) => {
+            const opt = new Option(p.nome, i);
+            select.add(opt);
+        });
     }
 
     function eseguiCalcolo() {
-        const p = prodotti[document.getElementById('select-prodotto').value];
-        if (!p) return;
-
+        const select = document.getElementById('select-prodotto');
+        if (select.value === "") return;
+        
+        const p = prodotti[select.value];
         const qta = parseFloat(document.getElementById('qta').value) || 0;
         const unita = document.getElementById('unita').value;
         const scontoPerc = parseFloat(document.getElementById('sconto').value) || 0;
         const trasporto = parseFloat(document.getElementById('trasporto').value) || 0;
 
-        let pzTotali = 0;
-        let mqTotali = 0;
-        let prezzoUnitario = 0;
+        let baseImponibile = 0;
 
-        // Logica specifica per tabella
         if (tabellaAttuale.startsWith('mattoni')) {
             let resa = p.pz_m2;
             if (tabellaAttuale === "mattoni_fortis") {
                 resa = (document.getElementById('tipo-posa').value === 'coltello') ? p.pz_m2_coltello : p.pz_m2_piatto;
             }
-            pzTotali = (unita === 'mq') ? Math.ceil(qta * resa) : qta;
-            prezzoUnitario = p.prezzo_pz;
+            let pzTotali = (unita === 'mq') ? Math.ceil(qta * resa) : qta;
+            baseImponibile = pzTotali * (p.prezzo_pz || 0);
         } else {
-            // Per Pietre e Legno usiamo i mq come base
-            mqTotali = qta; 
-            prezzoUnitario = p.prezzo_m2 || p.prezzo_unita;
+            // Per Pietre e Legno
+            let prezzoMq = p.prezzo_m2 || p.prezzo_unita || 0;
+            baseImponibile = qta * prezzoMq;
         }
 
-        // Calcolo base (esempio generico, personalizzabile per tabella)
-        let baseImponibile = (pzTotali > 0) ? pzTotali * prezzoUnitario : qta * prezzoUnitario;
         let scontato = baseImponibile * (1 - (scontoPerc / 100));
         let totale = scontato + trasporto;
 
         document.getElementById('prezzo-finale').innerText = "€ " + totale.toLocaleString('it-IT', {minimumFractionDigits: 2});
-        
-        // Logica info bancali
-        const log = document.getElementById('logistica');
-        if (p.pz_bancale || p.m2_bancale) {
-            log.classList.remove('hidden');
-            let nBancali = (pzTotali > 0) ? (pzTotali / p.pz_bancale) : (qta / p.m2_bancale);
-            log.innerHTML = `<strong>Info Logistica:</strong><br>Bancali stimati: ${nBancali.toFixed(2)}<br>Peso stimato: ${(nBancali * (p.kg_bancale || 0) / 1000).toFixed(2)} t`;
-        }
     }
 
     init();
