@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Preventivatore Genesis</title>
+    <title>Preventivatore Professionale</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #2c3e50; --bg: #f4f7f6; --accent: #27ae60; --warning: #e67e22; }
@@ -17,6 +17,7 @@
         .result-box { background: var(--primary); color: white; padding: 20px; border-radius: 10px; margin-top: 20px; text-align: center; }
         .total-price { font-size: 2.2rem; font-weight: bold; }
         .info-nota { background: #fff3e0; color: #e67e22; padding: 10px; border-radius: 8px; font-size: 0.85rem; margin-top: 15px; border-left: 4px solid var(--warning); display: none; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -35,6 +36,14 @@
 
     <label>Prodotto</label>
     <select id="select-prodotto" onchange="eseguiCalcolo()"></select>
+
+    <div id="box-posa" class="hidden">
+        <label>Tipo di Posa</label>
+        <select id="tipo-posa" onchange="eseguiCalcolo()">
+            <option value="piatto">Di Piatto (Standard)</option>
+            <option value="coltello">Di Coltello</option>
+        </select>
+    </div>
 
     <div class="row">
         <div style="flex:2">
@@ -87,6 +96,11 @@
         tabellaAttuale = params.get('t');
         document.getElementById('gamma-title').innerText = params.get('g') || "Calcolo";
 
+        // Mostra il selettore posa solo se la tabella è Fortis
+        if (tabellaAttuale === "mattoni_fortis") {
+            document.getElementById('box-posa').classList.remove('hidden');
+        }
+
         const { data } = await _supabase.from(tabellaAttuale).select('*').order('nome');
         if (data) {
             prodotti = data;
@@ -111,8 +125,15 @@
         const trasporto = parseFloat(document.getElementById('trasporto').value) || 0;
         const nota = document.getElementById('nota-arrotondamento');
 
-        // 1. QUANTITÀ E ARROTONDAMENTI (GENESIS)
-        let pzTeorici = (unita === 'mq') ? totaleQta * (p.pz_m2 || 1) : totaleQta;
+        // 1. DETERMINAZIONE RESA (Gestione Fortis)
+        let resa = p.pz_m2 || 1;
+        if (tabellaAttuale === "mattoni_fortis") {
+            const posa = document.getElementById('tipo-posa').value;
+            resa = (posa === 'coltello') ? p.pz_m2_coltello : p.pz_m2_piatto;
+        }
+
+        // 2. PEZZI TEORICI E ARROTONDAMENTI
+        let pzTeorici = (unita === 'mq') ? totaleQta * resa : totaleQta;
         let pzFinali = Math.ceil(pzTeorici);
         nota.style.display = 'none';
 
@@ -127,7 +148,7 @@
             }
         }
 
-        // 2. LOGICA SCONTO BASE (45% o 50%)
+        // 3. LOGICA SCONTO BASE
         let sBasePerc = 0;
         const manualSconto = document.getElementById('sconto').value;
 
@@ -138,14 +159,13 @@
             document.getElementById('sconto').placeholder = sBasePerc + "%";
         }
 
-        // 3. CALCOLO A CASCATA (Lordo -> Sconto Base -> Sconto Extra)
+        // 4. CALCOLO A CASCATA
         let lordo = pzFinali * (parseFloat(p.prezzo_pz) || 0);
         let dopoScontoBase = lordo * (1 - (sBasePerc / 100));
-        let dopoScontoExtra = dopoScontoBase * (1 - (sExtraPerc / 100)); // Sconto su prezzo già scontato
-        
+        let dopoScontoExtra = dopoScontoBase * (1 - (sExtraPerc / 100));
         let baseImponibile = dopoScontoExtra + trasporto;
 
-        // 4. GESTIONE IVA (22% per Privati)
+        // 5. IVA E FINALE
         let totaleFinale = baseImponibile;
         if (tipoCliente === 'privato') {
             totaleFinale = baseImponibile * 1.22;
