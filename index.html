@@ -7,16 +7,16 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Preventivatore PWA</title>
     <style>
-        :root { --primary: #2c3e50; --bg: #f4f7f6; }
-        body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        :root { --primary: #2c3e50; --bg: #f4f7f6; --accent: #3498db; }
+        body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         header { text-align: center; margin-bottom: 30px; }
-        .menu-container { width: 100%; max-width: 500px; }
+        .menu-container { width: 100%; max-width: 500px; flex-grow: 1; }
         .macro-btn { width: 100%; background: white; border: 1px solid #ddd; padding: 22px; margin-bottom: 12px; border-radius: 15px; text-align: left; font-size: 1.2rem; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
         .submenu { display: none; background: white; margin-top: -18px; margin-bottom: 15px; border-radius: 0 0 15px 15px; border: 1px solid #ddd; border-top: none; overflow: hidden; }
         .category-link { display: block; padding: 18px 20px 18px 55px; text-decoration: none; color: #34495e; border-bottom: 1px solid #f0f0f0; font-weight: 500; }
+        .footer-admin { margin-top: 30px; width: 100%; max-width: 500px; }
+        .admin-btn { width: 100%; background: #95a5a6; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; text-decoration: none; display: block; text-align: center; }
         .icon { font-size: 1.4rem; margin-right: 12px; }
-        .arrow { font-size: 0.8rem; transition: transform 0.3s; }
-        .rotate { transform: rotate(180deg); }
     </style>
 </head>
 <body>
@@ -28,46 +28,35 @@
     <div class="menu-container">
         <button class="macro-btn" onclick="toggleMenu('menu-mattoni', this)">
             <span><span class="icon">🧱</span> Mattoni</span>
-            <span class="arrow">▼</span>
+            <span>▼</span>
         </button>
         <div id="menu-mattoni" class="submenu">
             <a href="calcolo.html?cat=genesis" class="category-link">Genesis</a>
             <a href="calcolo.html?cat=futura" class="category-link">Futura</a>
             <a href="calcolo.html?cat=croma" class="category-link">Croma</a>
             <a href="calcolo.html?cat=fortis" class="category-link">Fortis</a>
-            <a href="calcolo.html?cat=cotto" class="category-link">Cotto</a>
         </div>
 
         <button class="macro-btn" onclick="toggleMenu('menu-pietra', this)">
             <span><span class="icon">🪨</span> Pietra</span>
-            <span class="arrow">▼</span>
+            <span>▼</span>
         </button>
         <div id="menu-pietra" class="submenu">
             <a href="calcolo.html?cat=posa-incerta" class="category-link">Posa incerta</a>
             <a href="calcolo.html?cat=pannelli-preassemblati" class="category-link">Pannelli preassemblati</a>
-            <a href="calcolo.html?cat=taglio-rettangolare" class="category-link">Taglio Rettangolare</a>
-            <a href="calcolo.html?cat=pavimenti-pietra" class="category-link">Pavimenti</a>
         </div>
+    </div>
+
+    <div class="footer-admin">
+        <a href="admin.html" class="admin-btn">⚙️ Gestione Database (Excel Style)</a>
     </div>
 
     <script>
         function toggleMenu(id, btn) {
-            const menus = document.querySelectorAll('.submenu');
             const target = document.getElementById(id);
-            const arrow = btn.querySelector('.arrow');
-            menus.forEach(menu => {
-                if (menu.id !== id) {
-                    menu.style.display = 'none';
-                    menu.previousElementSibling.querySelector('.arrow').classList.remove('rotate');
-                }
-            });
-            if (target.style.display === 'block') {
-                target.style.display = 'none';
-                arrow.classList.remove('rotate');
-            } else {
-                target.style.display = 'block';
-                arrow.classList.add('rotate');
-            }
+            const isVisible = target.style.display === 'block';
+            document.querySelectorAll('.submenu').forEach(m => m.style.display = 'none');
+            target.style.display = isVisible ? 'none' : 'block';
         }
     </script>
 </body>
