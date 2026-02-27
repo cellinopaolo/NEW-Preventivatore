@@ -3,101 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Preventivi">
-    
     <title>Preventivatore PWA</title>
     <style>
-        :root {
-            --primary: #2c3e50;
-            --accent: #3498db;
-            --bg: #f4f7f6;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            -webkit-tap-highlight-color: transparent; /* Toglie il flash blu al tocco su iPhone */
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            margin-top: env(safe-area-inset-top); /* Gestisce la notch degli iPhone */
-        }
-
-        .menu-container {
-            width: 100%;
-            max-width: 600px; /* Un po' più largo per iPad/Desktop */
-        }
-
-        .macro-btn {
-            width: 100%;
-            background: white;
-            border: 1px solid #ddd;
-            padding: 22px;
-            margin-bottom: 12px;
-            border-radius: 15px;
-            text-align: left;
-            font-size: 1.2rem;
-            font-weight: 700;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-            transition: all 0.2s ease;
-        }
-
-        /* Effetto al tocco su mobile e hover su Mac/Windows */
-        .macro-btn:active { background: #f9f9f9; transform: scale(0.99); }
-
-        .submenu {
-            display: none;
-            background: #ffffff;
-            margin-top: -18px;
-            margin-bottom: 15px;
-            border-radius: 0 0 15px 15px;
-            border: 1px solid #ddd;
-            border-top: none;
-            overflow: hidden;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .category-link {
-            display: block;
-            padding: 18px 20px 18px 55px;
-            text-decoration: none;
-            color: #34495e;
-            border-bottom: 1px solid #f0f0f0;
-            font-weight: 500;
-        }
-
-        .category-link:last-child { border-bottom: none; }
-        .category-link:active { background: #f0f3f5; }
-
+        :root { --primary: #2c3e50; --bg: #f4f7f6; }
+        body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        header { text-align: center; margin-bottom: 30px; }
+        .menu-container { width: 100%; max-width: 500px; }
+        .macro-btn { width: 100%; background: white; border: 1px solid #ddd; padding: 22px; margin-bottom: 12px; border-radius: 15px; text-align: left; font-size: 1.2rem; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .submenu { display: none; background: white; margin-top: -18px; margin-bottom: 15px; border-radius: 0 0 15px 15px; border: 1px solid #ddd; border-top: none; overflow: hidden; }
+        .category-link { display: block; padding: 18px 20px 18px 55px; text-decoration: none; color: #34495e; border-bottom: 1px solid #f0f0f0; font-weight: 500; }
         .icon { font-size: 1.4rem; margin-right: 12px; }
         .arrow { font-size: 0.8rem; transition: transform 0.3s; }
         .rotate { transform: rotate(180deg); }
     </style>
 </head>
 <body>
-
     <header>
-        <h1>Preventivatore Pro</h1>
-        <p>Scegli il materiale</p>
+        <h1>Preventivatore</h1>
+        <p>Seleziona la Gamma</p>
     </header>
 
     <div class="menu-container">
@@ -106,11 +31,11 @@
             <span class="arrow">▼</span>
         </button>
         <div id="menu-mattoni" class="submenu">
-            <a href="categoria.html?cat=genesis" class="category-link">Genesis</a>
-            <a href="categoria.html?cat=futura" class="category-link">Futura</a>
-            <a href="categoria.html?cat=croma" class="category-link">Croma</a>
-            <a href="categoria.html?cat=fortis" class="category-link">Fortis</a>
-            <a href="categoria.html?cat=cotto" class="category-link">Cotto</a>
+            <a href="calcolo.html?cat=genesis" class="category-link">Genesis</a>
+            <a href="calcolo.html?cat=futura" class="category-link">Futura</a>
+            <a href="calcolo.html?cat=croma" class="category-link">Croma</a>
+            <a href="calcolo.html?cat=fortis" class="category-link">Fortis</a>
+            <a href="calcolo.html?cat=cotto" class="category-link">Cotto</a>
         </div>
 
         <button class="macro-btn" onclick="toggleMenu('menu-pietra', this)">
@@ -118,19 +43,10 @@
             <span class="arrow">▼</span>
         </button>
         <div id="menu-pietra" class="submenu">
-            <a href="categoria.html?cat=posa-incerta" class="category-link">Posa incerta</a>
-            <a href="categoria.html?cat=pannelli-preassemblati" class="category-link">Pannelli preassemblati</a>
-            <a href="categoria.html?cat=taglio-rettangolare" class="category-link">Taglio Rettangolare</a>
-            <a href="categoria.html?cat=pavimenti-pietra" class="category-link">Pavimenti</a>
-        </div>
-
-        <button class="macro-btn" onclick="toggleMenu('menu-legno', this)">
-            <span><span class="icon">🪵</span> Legno</span>
-            <span class="arrow">▼</span>
-        </button>
-        <div id="menu-legno" class="submenu">
-            <a href="categoria.html?cat=rivestimenti-legno" class="category-link">Rivestimenti</a>
-            <a href="categoria.html?cat=pavimenti-legno" class="category-link">Pavimenti</a>
+            <a href="calcolo.html?cat=posa-incerta" class="category-link">Posa incerta</a>
+            <a href="calcolo.html?cat=pannelli-preassemblati" class="category-link">Pannelli preassemblati</a>
+            <a href="calcolo.html?cat=taglio-rettangolare" class="category-link">Taglio Rettangolare</a>
+            <a href="calcolo.html?cat=pavimenti-pietra" class="category-link">Pavimenti</a>
         </div>
     </div>
 
@@ -139,16 +55,12 @@
             const menus = document.querySelectorAll('.submenu');
             const target = document.getElementById(id);
             const arrow = btn.querySelector('.arrow');
-            
-            // Chiude gli altri e resetta le frecce
             menus.forEach(menu => {
                 if (menu.id !== id) {
                     menu.style.display = 'none';
                     menu.previousElementSibling.querySelector('.arrow').classList.remove('rotate');
                 }
             });
-
-            // Toggle
             if (target.style.display === 'block') {
                 target.style.display = 'none';
                 arrow.classList.remove('rotate');
