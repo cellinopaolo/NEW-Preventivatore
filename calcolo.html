@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Calcolo Preventivo</title>
+    <title>Preventivatore - Calcolo</title>
     <style>
         :root { --primary: #2c3e50; --bg: #f4f7f6; --accent: #27ae60; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; }
@@ -58,7 +58,7 @@
         </div>
 
         <div class="field">
-            <label>Quantità Extra / Sfrido</label>
+            <label>Quantità Extra / Sfrido (in Unità)</label>
             <input type="number" id="extra" value="0" oninput="eseguiCalcolo()">
         </div>
 
@@ -98,27 +98,26 @@
     </div>
 
     <script>
-        const database = {
-            "genesis": [
-                { n: "Genesis 415", p: 2.40, resa: 58, pzSca: 1, pzBan: 600, sfusa: false },
-                { n: "Genesis 415LS", p: 2.40, resa: 58, pzSca: 30, pzBan: 1680, sfusa: true },
-                { n: "Genesis 415AG", p: 5.50, resa: 13, pzSca: 16, pzBan: 1024, sfusa: true }
-            ],
-            "fortis": [
-                { n: "Fortis 777", p: 1.80, resaPiatto: 50, resaColtello: 90, pzSca: 1, pzBan: 500, sfusa: false }
-            ]
-        };
+        // RECUPERO DATI DAL LOCALSTORAGE (DATABASE ADMIN)
+        let databaseCompleto = JSON.parse(localStorage.getItem('preventivatore_db')) || [
+            // Dati di fallback se il database è vuoto
+            { n: "Genesis 415", g: "genesis", p: 2.40, r: 58, ps: 1, pb: 600, s: "no" },
+            { n: "Genesis 415LS", g: "genesis", p: 2.40, r: 58, ps: 30, pb: 1680, s: "si" },
+            { n: "Genesis 415AG", g: "genesis", p: 5.50, r: 13, ps: 16, pb: 1024, s: "si" }
+        ];
 
         const urlParams = new URLSearchParams(window.location.search);
-        const gamma = urlParams.get('cat') || 'genesis';
-        document.getElementById('gamma-title').innerText = "Gamma " + gamma.toUpperCase();
+        const gammaCorrente = urlParams.get('cat') || 'genesis';
+        document.getElementById('gamma-title').innerText = "Gamma " + gammaCorrente.toUpperCase();
 
-        if(gamma === 'fortis') document.getElementById('box-fortis').classList.remove('hidden');
+        // Mostra box Fortis se necessario
+        if(gammaCorrente === 'fortis') document.getElementById('box-fortis').classList.remove('hidden');
 
+        // Filtra prodotti per la gamma selezionata
+        const prodottiFiltrati = databaseCompleto.filter(p => p.g === gammaCorrente);
         const selectProd = document.getElementById('select-prodotto');
-        const prodottiGamma = database[gamma] || [];
-        
-        prodottiGamma.forEach((p, index) => {
+
+        prodottiFiltrati.forEach((p, index) => {
             let opt = document.createElement('option');
             opt.value = index;
             opt.text = p.n;
@@ -126,7 +125,7 @@
         });
 
         function eseguiCalcolo() {
-            const prod = prodottiGamma[selectProd.value];
+            const prod = prodottiFiltrati[selectProd.value];
             if (!prod) return;
 
             let qta = parseFloat(document.getElementById('quantita').value) || 0;
@@ -134,44 +133,55 @@
             let unita = document.getElementById('unita').value;
             let trasporto = parseFloat(document.getElementById('trasporto').value) || 0;
 
-            // Logica resa Fortis
-            let resaEffettiva = prod.resa;
-            if(gamma === 'fortis') {
+            // Logica resa (gestione speciale Fortis se presente nel DB)
+            let resaEffettiva = prod.r;
+            if(gammaCorrente === 'fortis') {
                 const tipoPosa = document.getElementById('posa-fortis').value;
-                resaEffettiva = (tipoPosa === 'coltello') ? prod.resaColtello : prod.resaPiatto;
+                // Se è Fortis, ipotizziamo resa 50 (piatto) o 90 (coltello) se non diversamente specificato
+                resaEffettiva = (tipoPosa === 'coltello') ? 90 : 50;
             }
 
+            // 1. Calcolo pezzi teorici
             let pzTeorici = (unita === 'pezzi') ? (qta + extra) : (qta + extra) * resaEffettiva;
+            
+            // 2. Logica Arrotondamento Logistica
             let pzEffettivi = 0;
             let logInfo = "";
+            let isSfusa = (prod.s.toLowerCase() === 'si');
 
-            if (!prod.sfusa) {
-                let numBan = Math.ceil(pzTeorici / prod.pzBan) || 0;
-                pzEffettivi = numBan * prod.pzBan;
-                logInfo = `Obbligo bancale: ${numBan} x ${prod.pzBan} pz.`;
+            if (!isSfusa) {
+                let numBan = Math.ceil(pzTeorici / prod.pb) || 0;
+                pzEffettivi = numBan * prod.pb;
+                logInfo = `Obbligo bancale: ${numBan} x ${prod.pb} pz.`;
             } else {
-                let numSca = Math.ceil(pzTeorici / prod.pzSca) || 0;
-                pzEffettivi = numSca * prod.pzSca;
+                let numSca = Math.ceil(pzTeorici / prod.ps) || 0;
+                pzEffettivi = numSca * prod.ps;
                 logInfo = `Arrotondato a scatole: ${pzEffettivi} pz.`;
             }
 
-            let scontoBase = (pzEffettivi >= prod.pzBan) ? 0.50 : 0.45;
-            let finale = (pzEffettivi * prod.p) * (1 - scontoBase);
+            // 3. Sconto dinamico (Almeno 1 bancale = 50%, meno = 45%)
+            let scontoBase = (pzEffettivi >= prod.pb) ? 0.50 : 0.45;
             
+            // 4. Calcolo Prezzo
+            let totaleScontato = (pzEffettivi * prod.p) * (1 - scontoBase);
+            
+            // Sconti extra dell'utente
             let s1 = parseFloat(document.getElementById('sconto-part').value) || 0;
             let s2 = parseFloat(document.getElementById('sconto-extra').value) || 0;
-            finale = finale * (1 - s1/100) * (1 - s2/100);
+            totaleScontato = totaleScontato * (1 - s1/100) * (1 - s2/100);
             
-            let totale = finale + trasporto;
+            let totaleFinale = totaleScontato + trasporto;
 
+            // Aggiornamento Interfaccia
             const infoBox = document.getElementById('logistica-info');
             infoBox.classList.remove('hidden');
-            infoBox.innerHTML = `<b>${logInfo}</b><br>Sconto applicato: ${scontoBase*100}%`;
+            infoBox.innerHTML = `<b>${logInfo}</b><br>Sconto base applicato: ${scontoBase*100}%`;
 
-            document.getElementById('prezzo-finale').innerText = "€ " + totale.toLocaleString('it-IT', {minimumFractionDigits: 2});
+            document.getElementById('prezzo-finale').innerText = "€ " + totaleFinale.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             document.getElementById('dettaglio-finale').innerHTML = `Pezzi: ${pzEffettivi} | Sconto Base: ${scontoBase*100}%`;
         }
 
+        // Calcolo iniziale
         eseguiCalcolo();
     </script>
 </body>
