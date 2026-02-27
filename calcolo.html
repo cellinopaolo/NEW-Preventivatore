@@ -37,12 +37,28 @@
     <label>Prodotto</label>
     <select id="select-prodotto" onchange="eseguiCalcolo()"></select>
 
-    <div id="box-posa" class="hidden">
+    <div id="box-posa-mattoni" class="hidden">
         <label>Tipo di Posa</label>
-        <select id="tipo-posa" onchange="eseguiCalcolo()">
+        <select id="tipo-posa-mattoni" onchange="eseguiCalcolo()">
             <option value="piatto">Di Piatto (Standard)</option>
             <option value="coltello">Di Coltello</option>
         </select>
+    </div>
+
+    <div id="box-posa-pietra" class="hidden">
+        <div class="row">
+            <div style="flex:2">
+                <label>Tipo di Posa</label>
+                <select id="tipo-posa-pietra" onchange="gestisciPosaPietra()">
+                    <option value="fugata">Fugata (Default)</option>
+                    <option value="secco">A Secco</option>
+                </select>
+            </div>
+            <div id="col-extra-secco" style="flex:1" class="hidden">
+                <label>Extra Secco (%)</label>
+                <input type="number" id="perc-secco" value="0" oninput="eseguiCalcolo()">
+            </div>
+        </div>
     </div>
 
     <div class="row">
@@ -97,7 +113,11 @@
         document.getElementById('gamma-title').innerText = params.get('g') || "Calcolo";
 
         if (tabellaAttuale === "mattoni_fortis") {
-            document.getElementById('box-posa').classList.remove('hidden');
+            document.getElementById('box-posa-mattoni').classList.remove('hidden');
+        }
+        
+        if (tabellaAttuale === "pietre_posa_incerta") {
+            document.getElementById('box-posa-pietra').classList.remove('hidden');
         }
 
         const { data } = await _supabase.from(tabellaAttuale).select('*').order('nome');
@@ -109,6 +129,18 @@
         }
     }
 
+    function gestisciPosaPietra() {
+        const tipo = document.getElementById('tipo-posa-pietra').value;
+        const colExtra = document.getElementById('col-extra-secco');
+        if (tipo === 'secco') {
+            colExtra.classList.remove('hidden');
+        } else {
+            colExtra.classList.add('hidden');
+            document.getElementById('perc-secco').value = 0;
+        }
+        eseguiCalcolo();
+    }
+
     function eseguiCalcolo() {
         const idx = document.getElementById('select-prodotto').value;
         if (idx === "") return;
@@ -116,7 +148,7 @@
         const p = prodotti[idx];
         const qtaBase = parseFloat(document.getElementById('qta').value) || 0;
         const qtaExtra = parseFloat(document.getElementById('qta-extra').value) || 0;
-        const totaleQtaInput = qtaBase + qtaExtra;
+        let totaleQtaRichiesta = qtaBase + qtaExtra;
         
         const unita = document.getElementById('unita').value;
         const tipoCliente = document.getElementById('tipo-cliente').value;
@@ -133,10 +165,10 @@
         if (tabellaAttuale.startsWith('mattoni')) {
             let resa = parseFloat(p.pz_m2) || 1;
             if (tabellaAttuale === "mattoni_fortis") {
-                const posa = document.getElementById('tipo-posa').value;
+                const posa = document.getElementById('tipo-posa-mattoni').value;
                 resa = (posa === 'coltello') ? parseFloat(p.pz_m2_coltello) : parseFloat(p.pz_m2_piatto);
             }
-            let pzTeorici = (unita === 'mq') ? totaleQtaInput * resa : totaleQtaInput;
+            let pzTeorici = (unita === 'mq') ? totaleQtaRichiesta * resa : totaleQtaRichiesta;
             let pzTemp = Math.ceil(pzTeorici);
             
             const nomeP = p.nome.toUpperCase();
@@ -157,10 +189,21 @@
             lordoMerce = qtaFinaleArrotondata * (parseFloat(p.prezzo_pz) || 0);
         }
 
-        // --- LOGICA MACROCATEGORIA PIETRE (MAPPATURA NUOVE COLONNE) ---
+        // --- LOGICA MACROCATEGORIA PIETRE (NUOVA) ---
         else if (tabellaAttuale.startsWith('pietre')) {
             let prezzoRif = parseFloat(p.prezzo_m2) || parseFloat(p.prezzo_unita) || parseFloat(p.prezzo_pz) || 0;
-            let qtaLavoro = totaleQtaInput;
+            
+            // Gestione specifica Posa Incerta (A Secco)
+            let qtaConPosa = totaleQtaRichiesta;
+            if (tabellaAttuale === "pietre_posa_incerta") {
+                const tipoPosaP = document.getElementById('tipo-posa-pietra').value;
+                if (tipoPosaP === 'secco') {
+                    const extraP = parseFloat(document.getElementById('perc-secco').value) || 0;
+                    qtaConPosa = totaleQtaRichiesta * (1 + (extraP / 100));
+                }
+            }
+
+            let qtaLavoro = qtaConPosa;
 
             if (p.sfuso === 'no') {
                 if (p.m2_bancale) {
@@ -174,7 +217,7 @@
                 } else if (p.m2_scatola) {
                     let m2S = parseFloat(p.m2_scatola);
                     qtaLavoro = Math.ceil(qtaLavoro / m2S) * m2S;
-                    sogliaSconto50 = 0; // Se venduto a scatole, lo sconto 50% solitamente non è automatico su una scatola
+                    sogliaSconto50 = 0;
                 }
             } else {
                 sogliaSconto50 = parseFloat(p.m2_bancale) || parseInt(p.pz_bancale) || 0;
@@ -207,11 +250,11 @@
 
         // --- AGGIORNAMENTO INTERFACCIA ---
         document.getElementById('prezzo-finale').innerText = "€ " + totaleVisualizzato.toLocaleString('it-IT', {minimumFractionDigits: 2});
-        document.getElementById('dettaglio-pz').innerText = `Quantità: ${qtaFinaleArrotondata} | Sconti: ${sBasePerc}% + ${sExtraPerc}% | Imponibile: € ${totaleImponibile.toFixed(2)}`;
+        document.getElementById('dettaglio-pz').innerText = `Quantità Finale: ${qtaFinaleArrotondata.toFixed(2)} | Sconti: ${sBasePerc}% + ${sExtraPerc}% | Imponibile: € ${totaleImponibile.toFixed(2)}`;
         
-        if (qtaFinaleArrotondata > totaleQtaInput && unita === 'mq') {
+        if (qtaFinaleArrotondata > totaleQtaRichiesta) {
             nota.style.display = 'block';
-            nota.innerText = `Arrotondato a ${qtaFinaleArrotondata} per vincoli di imballo intero.`;
+            nota.innerText = `Arrotondato a ${qtaFinaleArrotondata.toFixed(2)} per posa/imballo.`;
         } else {
             nota.style.display = 'none';
         }
