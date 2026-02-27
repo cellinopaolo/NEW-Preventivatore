@@ -7,17 +7,15 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #2c3e50; --bg: #f4f7f6; --accent: #27ae60; --warning: #e67e22; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
         .header { display: flex; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .back-btn { text-decoration: none; font-size: 1.5rem; margin-right: 15px; color: var(--primary); font-weight: bold; }
-        label { display: block; font-weight: bold; margin: 10px 0 5px; font-size: 0.8rem; color: #7f8c8d; text-transform: uppercase; }
-        select, input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; margin-bottom: 10px; }
+        .back-btn { text-decoration: none; font-size: 1.5rem; margin-right: 15px; color: var(--primary); }
+        label { display: block; font-weight: bold; margin: 10px 0 5px; font-size: 0.8rem; color: #7f8c8d; }
+        select, input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
         .result-box { background: var(--primary); color: white; padding: 20px; border-radius: 10px; margin-top: 20px; text-align: center; }
         .total-price { font-size: 2.2rem; font-weight: bold; }
         .info-nota { background: #fff3e0; color: #e67e22; padding: 10px; border-radius: 8px; font-size: 0.85rem; margin-top: 15px; border-left: 4px solid var(--warning); display: none; }
-        .error-msg { color: #e74c3c; font-size: 0.9rem; text-align: center; padding: 20px; }
-        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -25,56 +23,48 @@
 <div class="card">
     <div class="header">
         <a href="index.html" class="back-btn">←</a>
-        <h2 id="gamma-title" style="margin:0; font-size: 1.4rem;">Caricamento...</h2>
+        <h2 id="gamma-title">Preventivo</h2>
     </div>
 
-    <div id="error-container" class="error-msg hidden">Nessun prodotto trovato. Controlla il database.</div>
+    <label>Prodotto</label>
+    <select id="select-prodotto" onchange="eseguiCalcolo()"></select>
 
-    <div id="main-form">
-        <label>Prodotto</label>
-        <select id="select-prodotto" onchange="eseguiCalcolo()"></select>
-
-        <div id="posa-fortis" class="hidden">
-            <label>Tipo di Posa</label>
-            <select id="tipo-posa" onchange="eseguiCalcolo()">
-                <option value="coltello">A Coltello</option>
-                <option value="piatto">In Piano (Piatto)</option>
+    <div style="display:flex; gap:10px;">
+        <div style="flex:2">
+            <label>Quantità</label>
+            <input type="number" id="qta" value="0" oninput="eseguiCalcolo()">
+        </div>
+        <div style="flex:1">
+            <label>Unità</label>
+            <select id="unita" onchange="eseguiCalcolo()">
+                <option value="mq">m²</option>
+                <option value="pz">Pezzi</option>
             </select>
         </div>
+    </div>
 
-        <div style="display:flex; gap:10px;">
-            <div style="flex:2">
-                <label>Quantità</label>
-                <input type="number" id="qta" value="0" step="0.01" oninput="eseguiCalcolo()">
-            </div>
-            <div style="flex:1">
-                <label>Unità</label>
-                <select id="unita" onchange="eseguiCalcolo()">
-                    <option value="mq">m²</option>
-                    <option value="pz">Pezzi</option>
-                </select>
-            </div>
+    <div style="display:flex; gap:10px;">
+        <div style="flex:1">
+            <label>Sconto (%)</label>
+            <input type="number" id="sconto" placeholder="Auto" oninput="eseguiCalcolo()">
         </div>
-
-        <div style="display:flex; gap:10px;">
-            <div style="flex:1"><label>Sconto (%)</label><input type="number" id="sconto" value="0" oninput="eseguiCalcolo()"></div>
-            <div style="flex:1"><label>Trasporto (€)</label><input type="number" id="trasporto" value="0" oninput="eseguiCalcolo()"></div>
+        <div style="flex:1">
+            <label>Trasporto (€)</label>
+            <input type="number" id="trasporto" value="0" oninput="eseguiCalcolo()">
         </div>
+    </div>
 
-        <div id="nota-arrotondamento" class="info-nota"></div>
+    <div id="nota-arrotondamento" class="info-nota"></div>
 
-        <div class="result-box">
-            <div style="font-size:0.8rem; opacity:0.8; margin-bottom: 5px;">TOTALE STIMATO (IVA ESCL.)</div>
-            <div class="total-price" id="prezzo-finale">€ 0,00</div>
-            <div id="dettaglio-pz" style="font-size:0.85rem; margin-top:10px; opacity:0.9;"></div>
-        </div>
+    <div class="result-box">
+        <div style="font-size:0.8rem; opacity:0.8; margin-bottom: 5px;">TOTALE STIMATO (IVA ESCL.)</div>
+        <div class="total-price" id="prezzo-finale">€ 0,00</div>
+        <div id="dettaglio-pz" style="font-size:0.9rem; margin-top:10px; font-weight: 300;"></div>
     </div>
 </div>
 
 <script>
-    // Configurazione Supabase
     const _supabase = window.supabase.createClient('https://dzdbctihpqrgjfhiisxh.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6ZGJjdGlocHFyZ2pmaGlpc3hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODkyNzEsImV4cCI6MjA4Nzc2NTI3MX0.XWhI_mRPXzm36Lq0PFJ2lRm6sFjMfOFWNY4AlXDpqfQ');
-    
     let prodotti = [];
     let tabellaAttuale = "";
 
@@ -83,101 +73,73 @@
         tabellaAttuale = params.get('t');
         document.getElementById('gamma-title').innerText = params.get('g') || "Calcolo";
 
-        if (!tabellaAttuale) return;
-        if (tabellaAttuale === "mattoni_fortis") document.getElementById('posa-fortis').classList.remove('hidden');
-
-        const { data, error } = await _supabase.from(tabellaAttuale).select('*').order('nome');
-        
-        if (error || !data || data.length === 0) {
-            document.getElementById('error-container').classList.remove('hidden');
-            document.getElementById('main-form').classList.add('hidden');
-            return;
+        const { data } = await _supabase.from(tabellaAttuale).select('*').order('nome');
+        if (data) {
+            prodotti = data;
+            const s = document.getElementById('select-prodotto');
+            s.innerHTML = '<option value="">-- Seleziona --</option>';
+            prodotti.forEach((p, i) => s.add(new Option(p.nome, i)));
         }
-
-        prodotti = data;
-        const select = document.getElementById('select-prodotto');
-        select.innerHTML = '<option value="">-- Scegli Prodotto --</option>';
-        prodotti.forEach((p, i) => select.add(new Option(p.nome, i)));
     }
 
     function eseguiCalcolo() {
-        const select = document.getElementById('select-prodotto');
-        if (select.value === "") return;
+        const idx = document.getElementById('select-prodotto').value;
+        if (idx === "") return;
         
-        const p = prodotti[select.value];
-        const qta = parseFloat(document.getElementById('qta').value) || 0;
+        const p = prodotti[idx];
+        const qtaInput = parseFloat(document.getElementById('qta').value) || 0;
         const unita = document.getElementById('unita').value;
-        const scontoPerc = parseFloat(document.getElementById('sconto').value) || 0;
         const trasporto = parseFloat(document.getElementById('trasporto').value) || 0;
-        const notaBox = document.getElementById('nota-arrotondamento');
+        const nota = document.getElementById('nota-arrotondamento');
         
-        let pzFinali = 0;
-        let pzTeorici = 0;
-        notaBox.style.display = 'none';
+        // 1. CALCOLO QUANTITÀ E ARROTONDAMENTI
+        let pzNecessari = (unita === 'mq') ? qtaInput * (p.pz_m2 || 1) : qtaInput;
+        let pzFinali = Math.ceil(pzNecessari);
+        nota.style.display = 'none';
 
         if (tabellaAttuale.startsWith('mattoni')) {
-            let resa = p.pz_m2 || 1;
-            if (tabellaAttuale === "mattoni_fortis") {
-                resa = (document.getElementById('tipo-posa').value === 'coltello') ? p.pz_m2_coltello : p.pz_m2_piatto;
-            }
-            
-            pzTeorici = (unita === 'mq') ? qta * resa : qta;
             const nomeP = p.nome.toUpperCase();
-
-            // LOGICA ESCLUSIVA GENESIS
-            if (tabellaAttuale === "mattoni_genesis") {
-                if (p.sfuso === 'no') {
-                    // Vincolo Bancale
-                    let numBancali = Math.ceil(pzTeorici / p.pz_bancale);
-                    pzFinali = numBancali * p.pz_bancale;
-                    if (pzFinali > pzTeorici) {
-                        notaBox.style.display = 'block';
-                        notaBox.innerText = `Quantità arrotondata al bancale intero (${p.pz_bancale} pz).`;
-                    }
-                } 
-                else if (nomeP.includes("LS") || nomeP.includes("AG")) {
-                    // Vincolo Scatola
-                    if (p.pz_scatola > 0) {
-                        let numScatole = Math.ceil(pzTeorici / p.pz_scatola);
-                        pzFinali = numScatole * p.pz_scatola;
-                        if (pzFinali > pzTeorici) {
-                            notaBox.style.display = 'block';
-                            notaBox.innerText = `Quantità arrotondata alla scatola intera (${p.pz_scatola} pz).`;
-                        }
-                    } else {
-                        pzFinali = Math.ceil(pzTeorici);
-                    }
-                } 
-                else {
-                    pzFinali = Math.ceil(pzTeorici);
-                }
-            } else {
-                // Altre Gamme: Pezzo singolo
-                pzFinali = Math.ceil(pzTeorici);
+            if (tabellaAttuale === "mattoni_genesis" && p.sfuso === 'no' && p.pz_bancale > 0) {
+                let nBancali = Math.ceil(pzFinali / p.pz_bancale);
+                pzFinali = nBancali * p.pz_bancale;
+            } else if (tabellaAttuale === "mattoni_genesis" && (nomeP.includes("LS") || nomeP.includes("AG")) && p.pz_scatola > 0) {
+                let nScatole = Math.ceil(pzFinali / p.pz_scatola);
+                pzFinali = nScatole * p.pz_scatola;
             }
-        } else {
-            // Pietre e Legno (Basato su MQ)
-            pzFinali = qta; 
         }
 
-        // Calcolo Economico
-        let prezzoUnitario = p.prezzo_pz || p.prezzo_m2 || p.prezzo_unita || 0;
-        let imponibile = pzFinali * prezzoUnitario;
-        let scontato = imponibile * (1 - (scontoPerc / 100));
-        let totale = scontato + trasporto;
+        // 2. DETERMINAZIONE SCONTO AUTOMATICO (Default per Mattoni e Pietre)
+        let scontoApplicato = 0;
+        const inputSconto = document.getElementById('sconto').value;
 
-        // Output
+        if (inputSconto !== "") {
+            scontoApplicato = parseFloat(inputSconto);
+        } else if (tabellaAttuale.startsWith('mattoni') || tabellaAttuale.startsWith('pietre')) {
+            // Se la quantità è >= 1 bancale (o se non c'è bancale definito ma la qtà è significativa)
+            if (p.pz_bancale > 0) {
+                scontoApplicato = (pzFinali >= p.pz_bancale) ? 50 : 45;
+            } else {
+                scontoApplicato = 45; // Default se manca dato bancale
+            }
+            document.getElementById('sconto').placeholder = scontoApplicato + "%";
+        }
+
+        // 3. CALCOLO ECONOMICO
+        let prezzoUnitario = p.prezzo_pz || p.prezzo_m2 || 0;
+        let lordo = pzFinali * prezzoUnitario;
+        let totale = (lordo * (1 - (scontoApplicato / 100))) + trasporto;
+
+        // 4. OUTPUT
         document.getElementById('prezzo-finale').innerText = "€ " + totale.toLocaleString('it-IT', {minimumFractionDigits: 2});
+        document.getElementById('dettaglio-pz').innerText = `Conteggio finale: ${pzFinali} pezzi (Sconto: ${scontoApplicato}%)`;
         
-        if (pzFinali > 0 && tabellaAttuale.startsWith('mattoni')) {
-            document.getElementById('dettaglio-pz').innerText = `Pezzi calcolati: ${pzFinali}`;
-        } else {
-            document.getElementById('dettaglio-pz').innerText = "";
+        if (pzFinali > Math.ceil(pzNecessari)) {
+            nota.style.display = 'block';
+            nota.innerText = `Quantità adeguata ai vincoli di imballo: ${pzFinali} pz.`;
         }
     }
 
     init();
 </script>
-
 </body>
 </html>
