@@ -3,58 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preventivatore Genesis - Selezione Gamma</title>
+    <title>Preventivatore - Selezione Categoria</title>
     <style>
         :root { --primary: #2c3e50; --bg: #f4f7f6; --accent: #2980b9; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; width: 100%; max-width: 450px; }
-        h1 { color: var(--primary); font-size: 1.5rem; margin-bottom: 5px; }
-        p { color: #7f8c8d; font-size: 0.9rem; margin-bottom: 25px; }
-        
-        .section-title { text-align: left; font-size: 0.8rem; text-transform: uppercase; color: #95a5a6; letter-spacing: 1px; margin: 20px 0 10px 5px; }
-        
-        .menu-grid { display: grid; gap: 12px; }
-        .btn { 
-            display: flex; align-items: center; justify-content: space-between; 
-            padding: 18px 25px; border-radius: 12px; text-decoration: none; 
-            font-weight: bold; transition: 0.3s; font-size: 1.1rem;
-        }
-        
-        /* Bottoni Gamma */
-        .btn-gamma { background: white; color: var(--primary); border: 2px solid #eee; }
-        .btn-gamma:hover { border-color: var(--accent); background: #f0f7ff; transform: translateX(5px); }
-        .emoji { font-size: 1.3rem; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+        h1 { color: var(--primary); text-align: center; font-size: 1.4rem; margin-bottom: 25px; }
 
-        /* Bottone Database */
-        .btn-db { background: #ecf0f1; color: #7f8c8d; border: none; margin-top: 20px; font-size: 0.9rem; justify-content: center; }
-        .btn-db:hover { background: #dfe6e9; color: #2c3e50; }
+        /* Stile Macro-Categorie (Mattoni, Pietra, Legno) */
+        .category-group { margin-bottom: 10px; border-radius: 12px; overflow: hidden; border: 1px solid #eee; }
+        .category-header { 
+            background: #fff; padding: 18px; cursor: pointer; display: flex; 
+            justify-content: space-between; align-items: center; font-weight: bold;
+            transition: background 0.3s;
+        }
+        .category-header:hover { background: #f8f9fa; }
+        
+        /* Contenitore Gamme (Nascosto di default) */
+        .gamma-list { display: none; background: #fdfdfd; padding: 5px 0; border-top: 1px solid #f0f0f0; }
+        .gamma-item { 
+            display: block; padding: 12px 40px; text-decoration: none; color: #555;
+            font-size: 1rem; border-bottom: 1px solid #f9f9f9; transition: 0.2s;
+        }
+        .gamma-item:hover { background: #f0f7ff; color: var(--accent); padding-left: 45px; }
+        .gamma-item:last-child { border-bottom: none; }
+
+        .active .gamma-list { display: block; }
+        .active .category-header { background: #f0f7ff; color: var(--accent); }
+        
+        .arrow { transition: transform 0.3s; font-size: 0.8rem; }
+        .active .arrow { transform: rotate(90deg); }
+
+        .btn-db { 
+            display: block; text-align: center; margin-top: 30px; padding: 12px;
+            color: #bdc3c7; text-decoration: none; font-size: 0.8rem; border: 1px dashed #ddd; border-radius: 10px;
+        }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Preventivatore Cloud</h1>
-        <p>Seleziona la gamma per iniziare</p>
 
-        <div class="section-title">Gamma Prodotti</div>
-        <div class="menu-grid">
-            <a href="calcolo.html?gamma=mattoni" class="btn btn-gamma">
-                <span>🧱 Mattoni Pieni</span>
-                <span class="emoji">›</span>
-            </a>
-            <a href="calcolo.html?gamma=pietre" class="btn btn-gamma">
-                <span>🪨 Pietre Naturali</span>
-                <span class="emoji">›</span>
-            </a>
-            <a href="calcolo.html?gamma=legno" class="btn btn-gamma">
-                <span>🪵 Legno & Decking</span>
-                <span class="emoji">›</span>
-            </a>
+<div class="card">
+    <h1>Preventivatore Cloud</h1>
+
+    <div class="category-group" id="group-mattoni">
+        <div class="category-header" onclick="toggleGroup('group-mattoni')">
+            <span>🧱 MATTONI</span>
+            <span class="arrow">▶</span>
         </div>
-
-        <div class="section-title">Configurazione</div>
-        <a href="listini.html" class="btn btn-db">
-            ⚙️ Gestione Database (Excel Style)
-        </a>
+        <div class="gamma-list">
+            <a href="calcolo.html?gamma=Genesis" class="gamma-item">Genesis →</a>
+            <a href="calcolo.html?gamma=Futura" class="gamma-item">Futura →</a>
+            <a href="calcolo.html?gamma=Croma" class="gamma-item">Croma →</a>
+            <a href="calcolo.html?gamma=Fortis" class="gamma-item">Fortis →</a>
+            <a href="calcolo.html?gamma=Cotto" class="gamma-item">Cotto →</a>
+        </div>
     </div>
+
+    <div class="category-group" id="group-pietra">
+        <div class="category-header" onclick="toggleGroup('group-pietra')">
+            <span>🪨 PIETRA</span>
+            <span class="arrow">▶</span>
+        </div>
+        <div class="gamma-list">
+            <a href="calcolo.html?gamma=PosaIncerta" class="gamma-item">Posa incerta →</a>
+            <a href="calcolo.html?gamma=Pannelli" class="gamma-item">Pannelli preassemblati →</a>
+        </div>
+    </div>
+
+    <div class="category-group" id="group-legno">
+        <div class="category-header" onclick="toggleGroup('group-legno')">
+            <span>🪵 LEGNO</span>
+            <span class="arrow">▶</span>
+        </div>
+        <div class="gamma-list">
+            <a href="calcolo.html?gamma=Rivestimenti" class="gamma-item">Rivestimenti →</a>
+            <a href="calcolo.html?gamma=Pavimenti" class="gamma-item">Pavimenti →</a>
+        </div>
+    </div>
+
+    <a href="listini.html" class="btn-db">⚙️ Gestione Database (Excel Style)</a>
+</div>
+
+<script>
+    function toggleGroup(id) {
+        const groups = document.querySelectorAll('.category-group');
+        groups.forEach(g => {
+            if (g.id === id) {
+                g.classList.toggle('active');
+            } else {
+                g.classList.remove('active'); // Chiude gli altri quando ne apri uno
+            }
+        });
+    }
+</script>
+
 </body>
 </html>
