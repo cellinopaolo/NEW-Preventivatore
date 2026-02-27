@@ -27,7 +27,7 @@
         <h2 id="gamma-title">Preventivo</h2>
     </div>
 
-    <label>Cliente</label>
+    <label>Tipo Cliente</label>
     <select id="tipo-cliente" onchange="eseguiCalcolo()">
         <option value="azienda">Azienda (Prezzi IVA Escl.)</option>
         <option value="privato">Privato (Aggiungi IVA 22%)</option>
@@ -107,16 +107,15 @@
         
         const unita = document.getElementById('unita').value;
         const tipoCliente = document.getElementById('tipo-cliente').value;
-        const sExtra = parseFloat(document.getElementById('sconto-extra').value) || 0;
+        const sExtraPerc = parseFloat(document.getElementById('sconto-extra').value) || 0;
         const trasporto = parseFloat(document.getElementById('trasporto').value) || 0;
         const nota = document.getElementById('nota-arrotondamento');
 
-        // 1. PEZZI NECESSARI
+        // 1. QUANTITÀ E ARROTONDAMENTI (GENESIS)
         let pzTeorici = (unita === 'mq') ? totaleQta * (p.pz_m2 || 1) : totaleQta;
         let pzFinali = Math.ceil(pzTeorici);
         nota.style.display = 'none';
 
-        // 2. ARROTONDAMENTI (SOLO GENESIS)
         if (tabellaAttuale === "mattoni_genesis") {
             const nomeP = p.nome.toUpperCase();
             if (p.sfuso === 'no' && p.pz_bancale > 0) {
@@ -128,25 +127,25 @@
             }
         }
 
-        // 3. SCONTI
-        let sBase = 0;
+        // 2. LOGICA SCONTO BASE (45% o 50%)
+        let sBasePerc = 0;
         const manualSconto = document.getElementById('sconto').value;
 
         if (manualSconto !== "") {
-            sBase = parseFloat(manualSconto);
+            sBasePerc = parseFloat(manualSconto);
         } else if (tabellaAttuale.startsWith('mattoni') || tabellaAttuale.startsWith('pietre')) {
-            sBase = (p.pz_bancale > 0 && pzFinali >= p.pz_bancale) ? 50 : 45;
-            document.getElementById('sconto').placeholder = sBase + "%";
+            sBasePerc = (p.pz_bancale > 0 && pzFinali >= p.pz_bancale) ? 50 : 45;
+            document.getElementById('sconto').placeholder = sBasePerc + "%";
         }
+
+        // 3. CALCOLO A CASCATA (Lordo -> Sconto Base -> Sconto Extra)
+        let lordo = pzFinali * (parseFloat(p.prezzo_pz) || 0);
+        let dopoScontoBase = lordo * (1 - (sBasePerc / 100));
+        let dopoScontoExtra = dopoScontoBase * (1 - (sExtraPerc / 100)); // Sconto su prezzo già scontato
         
-        let scontoTotale = sBase + sExtra;
+        let baseImponibile = dopoScontoExtra + trasporto;
 
-        // 4. CALCOLO ECONOMICO
-        let lordo = pzFinali * (p.prezzo_pz || p.prezzo_m2 || 0);
-        let netto = lordo * (1 - (scontoTotale / 100));
-        let baseImponibile = netto + trasporto;
-
-        // 5. IVA E FINALE
+        // 4. GESTIONE IVA (22% per Privati)
         let totaleFinale = baseImponibile;
         if (tipoCliente === 'privato') {
             totaleFinale = baseImponibile * 1.22;
@@ -157,7 +156,7 @@
 
         // OUTPUT
         document.getElementById('prezzo-finale').innerText = "€ " + totaleFinale.toLocaleString('it-IT', {minimumFractionDigits: 2});
-        document.getElementById('dettaglio-pz').innerText = `Pezzi: ${pzFinali} | Sconto Tot: ${scontoTotale}% | Imponibile: € ${baseImponibile.toFixed(2)}`;
+        document.getElementById('dettaglio-pz').innerText = `Pezzi: ${pzFinali} | Sconti: ${sBasePerc}% + ${sExtraPerc}% | Imponibile: € ${baseImponibile.toFixed(2)}`;
         
         if (pzFinali > Math.ceil(pzTeorici)) {
             nota.style.display = 'block';
